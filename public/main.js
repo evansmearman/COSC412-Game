@@ -80,7 +80,7 @@ function shootSphere() {
   const velocity = new THREE.Vector3(0, 0, -1);
   velocity.applyQuaternion(camera.quaternion); // Move in the camera's direction
   velocity.multiplyScalar(0.5); // Adjust the speed of the projectile
-
+  console.log(camera.quaternion.x)
   scene.add(sphere);
   projectiles.push({ mesh: sphere, velocity });
 }
@@ -150,5 +150,16 @@ function addNewPlayer(id, position) {
   const otherPlayerMesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ color: 0xff0000 }));
   otherPlayerMesh.position.set(position.x, position.y, position.z);
   scene.add(otherPlayerMesh);
+  otherPlayers[id] = otherPlayerMesh;
+}
+
+
+
+//Add a new projectile to the scene
+
+function addNewProjectile(id, position) {
+  const newProjectile = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 8), new THREE.MeshBasicMaterial({ color: 0xff0000 }));
+  newProjectile.position.set(position.x, position.y, position.z);
+  scene.add(newProjectile);
   otherPlayers[id] = otherPlayerMesh;
 }
