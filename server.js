@@ -10,6 +10,7 @@ const io = new Server(server);
 app.use(express.static('public'));
 
 let players = {};
+let projectiles = {}; 
 
 io.on('connection', (socket) => {
   console.log(`Player connected: ${socket.id}`);

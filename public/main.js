@@ -8,7 +8,7 @@ const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
-// Geometry and materials
+// Geometry and materials for player
 const geometry = new THREE.BoxGeometry();
 const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
 const playerMesh = new THREE.Mesh(geometry, material);
@@ -25,6 +25,9 @@ playerMesh.add(camera); // Attach the camera to the player's cube
 const playerSpeed = 0.1;
 let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
 let yaw = 0, pitch = 0; // For camera rotation
+
+// Store projectiles (spheres)
+let projectiles = [];
 
 // Mouse movement handling for looking around
 document.addEventListener('mousemove', (event) => {
@@ -56,7 +59,33 @@ window.addEventListener('keyup', (event) => {
   }
 });
 
-// Animate and move player
+// Handle left mouse click to shoot a sphere
+window.addEventListener('mousedown', (event) => {
+  if (event.button === 0) { // Left click
+    shootSphere();
+  }
+});
+
+// Shoot a sphere in the direction the player is facing
+function shootSphere() {
+  const sphereGeometry = new THREE.SphereGeometry(0.1, 8, 8);
+  const sphereMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+  const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+
+  // Set the sphere's initial position at the player's camera
+  sphere.position.copy(playerMesh.position);
+  sphere.position.y += 1.6; // Adjust to camera height
+  
+  // Set velocity in the direction the camera is facing
+  const velocity = new THREE.Vector3(0, 0, -1);
+  velocity.applyQuaternion(camera.quaternion); // Move in the camera's direction
+  velocity.multiplyScalar(0.5); // Adjust the speed of the projectile
+
+  scene.add(sphere);
+  projectiles.push({ mesh: sphere, velocity });
+}
+
+// Animate and move player and projectiles
 function animate() {
   requestAnimationFrame(animate);
   
@@ -69,6 +98,18 @@ function animate() {
   // Convert movement relative to player's direction
   direction.applyQuaternion(playerMesh.quaternion);
   playerMesh.position.add(direction);
+
+  // Move projectiles
+  for (let i = projectiles.length - 1; i >= 0; i--) {
+    const projectile = projectiles[i];
+    projectile.mesh.position.add(projectile.velocity);
+
+    // Remove projectile if it goes too far
+    if (projectile.mesh.position.length() > 10) {
+      scene.remove(projectile.mesh);
+      projectiles.splice(i, 1);
+    }
+  }
 
   // Send movement data to the server
   socket.emit('move', { position: playerMesh.position });
