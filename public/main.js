@@ -1,18 +1,63 @@
+// import { World } from 'cannon'; 
+
+
 // main.js
 const socket = io();
 
 // Create Three.js scene
 const scene = new THREE.Scene();
+scene.background = new THREE.Color(140, 255, 115)
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-const renderer = new THREE.WebGLRenderer();
+const renderer = new THREE.WebGLRenderer({antialias: true});
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
+
+
+const sunlight = new THREE.DirectionalLight(0xffffff, 1);
+sunlight.position.set(50, 100, 50);
+sunlight.castShadow = true;
+
+sunlight.shadow.mapSize.width = 4096;
+sunlight.shadow.mapSize.height = 4096;
+sunlight.shadow.camera.near = 0.5;
+sunlight.shadow.camera.far = 500;
+sunlight.shadow.camera.left = -100;
+sunlight.shadow.camera.right = 100;
+sunlight.shadow.camera.top = 100;
+sunlight.shadow.camera.bottom = -100;
+
+scene.add(sunlight);
+
+
+
+// Add ambient light (soft global lighting)
+const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
+scene.add(ambientLight);
+
+// Add hemisphere light (sky and ground light)
+const hemisphereLight = new THREE.HemisphereLight(0x87CEEB, 0x228B22, 0.7);
+scene.add(hemisphereLight);
+
+// Enable shadows in the renderer
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+
+
+
+// const world = new World()
+
+
+// world.gravity.set(0,-9.82,0)
+
+
 
 // Geometry and materials for player
 const geometry = new THREE.BoxGeometry();
 const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
 const playerMesh = new THREE.Mesh(geometry, material);
 scene.add(playerMesh);
+
 
 // Store other players
 let otherPlayers = {};
@@ -21,6 +66,44 @@ let otherPlayers = {};
 camera.position.set(0, 1.6, 0); // Set camera height to player's head level
 playerMesh.add(camera); // Attach the camera to the player's cube
 
+// Add ground map (plane)
+const groundGeometry = new THREE.PlaneGeometry(100, 100); // 100x100 units plane
+const groundMaterial = new THREE.MeshBasicMaterial({ color: 0x228B22, side: THREE.DoubleSide }); // Green ground
+const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+ground.rotation.x = -Math.PI / 2; // Rotate to make it horizontal
+scene.add(ground);
+
+// const planeShape = new CANNON.Plane()
+// const planeBody = new CANNON.Body({mass:0})
+
+// planeBody.addShape(planeShape)
+// planeBody.quaternion.setFromAxisAngle(1,0,0)
+
+
+
+// Add some obstacles to the map (example: boxes)
+const obstacleGeometry = new THREE.BoxGeometry(2, 2, 2); // Box size 2x2x2
+const obstacleMaterial = new THREE.MeshBasicMaterial({ color: 0x8B4513 }); // Brown obstacles
+
+// Add some obstacles at various positions
+const obstacles = [];
+for (let i = 0; i < 5; i++) {
+  const obstacle = new THREE.Mesh(obstacleGeometry, obstacleMaterial);
+  obstacle.position.set(
+    (Math.random() - 0.5) * 80, // Random x position
+    1,                           // Height to rest on the ground
+    (Math.random() - 0.5) * 80   // Random z position
+  );
+  scene.add(obstacle);
+  obstacles.push(obstacle);
+}
+
+playerMesh.castShadow = true;
+playerMesh.receiveShadow = true;
+ground.receiveShadow = true;
+obstacles.forEach(obstacle => {
+  obstacle.castShadow = true;
+  obstacle.receiveShadow = true})
 // Movement and view control variables
 const playerSpeed = 0.1;
 let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
@@ -80,7 +163,7 @@ function shootSphere() {
   const velocity = new THREE.Vector3(0, 0, -1);
   velocity.applyQuaternion(camera.quaternion); // Move in the camera's direction
   velocity.multiplyScalar(0.5); // Adjust the speed of the projectile
-  console.log(camera.quaternion.x)
+
   scene.add(sphere);
   projectiles.push({ mesh: sphere, velocity });
 }
@@ -99,13 +182,16 @@ function animate() {
   direction.applyQuaternion(playerMesh.quaternion);
   playerMesh.position.add(direction);
 
+  // Ensure the player stays above the ground (no gravity in this simple example)
+  playerMesh.position.y = 1; // Keep the player at a fixed height (above the ground)
+
   // Move projectiles
   for (let i = projectiles.length - 1; i >= 0; i--) {
     const projectile = projectiles[i];
     projectile.mesh.position.add(projectile.velocity);
 
     // Remove projectile if it goes too far
-    if (projectile.mesh.position.length() > 10) {
+    if (projectile.mesh.position.length() > 50) {
       scene.remove(projectile.mesh);
       projectiles.splice(i, 1);
     }
@@ -150,16 +236,5 @@ function addNewPlayer(id, position) {
   const otherPlayerMesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ color: 0xff0000 }));
   otherPlayerMesh.position.set(position.x, position.y, position.z);
   scene.add(otherPlayerMesh);
-  otherPlayers[id] = otherPlayerMesh;
-}
-
-
-
-//Add a new projectile to the scene
-
-function addNewProjectile(id, position) {
-  const newProjectile = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 8), new THREE.MeshBasicMaterial({ color: 0xff0000 }));
-  newProjectile.position.set(position.x, position.y, position.z);
-  scene.add(newProjectile);
   otherPlayers[id] = otherPlayerMesh;
 }
