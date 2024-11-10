@@ -100,7 +100,7 @@ window.addEventListener('keydown', (event) => {
     case 'KeyA': moveLeft = true; break;
     case 'KeyD': moveRight = true; break;
     case 'Space':
-      if (!isJumping) {
+      if (isHuman && !isJumping) {
         verticalSpeed = jumpHeight; // Apply upward velocity
         isJumping = true;
       }
@@ -165,8 +165,8 @@ function animate() {
   direction.applyQuaternion(playerMesh.quaternion);
   playerMesh.position.add(direction);
 
-  // Apply gravity and jump
-  if (isJumping) {
+  // Apply gravity and jump if Human
+  if (isJumping && isHuman) {
     verticalSpeed += gravity;  // Apply gravity
     playerMesh.position.y += verticalSpeed;  // Update player height
 
@@ -238,6 +238,18 @@ socket.on('lobbyFull', () => {
 socket.on('startGame', () => {
   console.log('Game has started!');
   // Add any additional logic needed to transition to game mode here
+});
+
+// Assign roles to players
+socket.on('assignRole', (role) => {
+  isHuman = role === 'Human';
+  console.log(`Player assigned role: ${role}`);
+  // Customize behavior based on the role
+  if (isHuman) {
+    console.log('You are playing as a Human!');
+  } else {
+    console.log('You are playing as an Insect!');
+  }
 });
 
 // Create directional light (sunlight)

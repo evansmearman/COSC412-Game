@@ -19,6 +19,7 @@ io.on('connection', (socket) => {
     lobby.push(socket.id);
     players[socket.id] = {
         position: { x: 0, y: 0, z: 0 },
+        role: null,  // Role will be assigned when the lobby is full
     };
 
     // Send the current players list to the newly connected player
@@ -30,7 +31,7 @@ io.on('connection', (socket) => {
     // Check if the lobby is full
     if (lobby.length === LOBBY_SIZE) {
         io.emit('lobbyFull'); // Notify players that the lobby is full
-        startGame(); // Start the game
+        assignRoles(); // Assign roles and start the game
     }
 
     // When player moves, update the position
@@ -55,6 +56,24 @@ io.on('connection', (socket) => {
         }
     });
 });
+
+// Function to assign roles to players
+function assignRoles() {
+    console.log('Assigning roles to players...');
+    let roleIndex = 0;
+    const roles = ['Human', 'Insect']; // Define the available roles
+
+    // Assign roles to players in the lobby
+    lobby.forEach((playerId) => {
+        const role = roles[roleIndex];
+        players[playerId].role = role;
+        io.to(playerId).emit('assignRole', role); // Send the role to the client
+        roleIndex = (roleIndex + 1) % roles.length; // Alternate between roles
+    });
+
+    // Start the game
+    startGame();
+}
 
 // Function to start the game
 function startGame() {
