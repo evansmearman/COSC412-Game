@@ -10,7 +10,7 @@ app.use(express.static('public'));
 
 let players = {};
 let lobby = [];
-const LOBBY_SIZE = 4; // Define the size of the lobby before starting the game
+const LOBBY_SIZE = 2; // Define the size of the lobby before starting the game
 
 io.on('connection', (socket) => {
     console.log(`Player connected: ${socket.id}`);

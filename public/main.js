@@ -60,19 +60,36 @@ for (let i = 0; i < 5; i++) {
 const playerSpeed = 0.1;
 let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
 let yaw = 0, pitch = 0; // For camera rotation
+let isJumping = false;
+let verticalSpeed = 0;  // For handling jump and gravity
+const gravity = -0.02;  // Gravity strength
+const jumpHeight = 0.5; // How high the player can jump
+const groundLevel = 1;  // The height at which the player stands
 
 // Store projectiles (spheres)
 let projectiles = [];
 
 // Mouse movement handling for looking around
-document.addEventListener('mousemove', (event) => {
-  const sensitivity = 0.002;
-  yaw -= event.movementX * sensitivity;
-  pitch -= event.movementY * sensitivity;
+let mouseLocked = false;
 
-  pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, pitch)); // Limit pitch
-  playerMesh.rotation.set(0, yaw, 0); // Rotate player cube for yaw
-  camera.rotation.set(pitch, 0, 0); // Adjust camera pitch
+document.addEventListener('mousemove', (event) => {
+  if (mouseLocked) {
+    const sensitivity = 0.002;
+    yaw -= event.movementX * sensitivity;
+    pitch -= event.movementY * sensitivity;
+
+    pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, pitch)); // Limit pitch
+    playerMesh.rotation.set(0, yaw, 0); // Rotate player cube for yaw
+    camera.rotation.set(pitch, 0, 0); // Adjust camera pitch
+  }
+});
+
+// Lock the mouse pointer when the player clicks the screen
+document.addEventListener('click', () => {
+  if (!mouseLocked) {
+    document.body.requestPointerLock();
+    mouseLocked = true;
+  }
 });
 
 // Handle key presses for movement
@@ -82,6 +99,20 @@ window.addEventListener('keydown', (event) => {
     case 'KeyS': moveBackward = true; break;
     case 'KeyA': moveLeft = true; break;
     case 'KeyD': moveRight = true; break;
+    case 'Space':
+      if (!isJumping) {
+        verticalSpeed = jumpHeight; // Apply upward velocity
+        isJumping = true;
+      }
+      break;
+    case 'Escape': 
+      if (mouseLocked) {
+        document.exitPointerLock();
+        mouseLocked = false;
+        // Pause the game (optional)
+        console.log("Game paused");
+      }
+      break;
   }
 });
 
@@ -134,8 +165,20 @@ function animate() {
   direction.applyQuaternion(playerMesh.quaternion);
   playerMesh.position.add(direction);
 
+  // Apply gravity and jump
+  if (isJumping) {
+    verticalSpeed += gravity;  // Apply gravity
+    playerMesh.position.y += verticalSpeed;  // Update player height
+
+    if (playerMesh.position.y <= groundLevel) {  // Stop falling at ground level
+      playerMesh.position.y = groundLevel;
+      isJumping = false;
+      verticalSpeed = 0;  // Reset vertical speed after landing
+    }
+  }
+
   // Ensure the player stays above the ground (no gravity in this simple example)
-  playerMesh.position.y = 1; // Keep the player at a fixed height (above the ground)
+  playerMesh.position.y = Math.max(playerMesh.position.y, groundLevel); // Keep player at ground level
 
   // Move projectiles
   for (let i = projectiles.length - 1; i >= 0; i--) {
