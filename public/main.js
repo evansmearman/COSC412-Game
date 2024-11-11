@@ -66,6 +66,11 @@ const gravity = -0.02;  // Gravity strength
 const jumpHeight = 0.5; // How high the player can jump
 const groundLevel = 1;  // The height at which the player stands
 
+// Flying and movement control variables
+let isFlying = false;
+let flyUp = false, flyDown = false;
+const flyingSpeed = 0.1; // Speed of flying
+
 // Store projectiles (spheres)
 let projectiles = [];
 
@@ -100,16 +105,21 @@ window.addEventListener('keydown', (event) => {
     case 'KeyA': moveLeft = true; break;
     case 'KeyD': moveRight = true; break;
     case 'Space':
-      if (isHuman && !isJumping) {
+      if (!isJumping) {
         verticalSpeed = jumpHeight; // Apply upward velocity
         isJumping = true;
       }
+      break;
+    case 'ShiftLeft':
+      flyUp = true; // Start flying upwards
+      break;
+    case 'ControlLeft':
+      flyDown = true; // Start flying downwards
       break;
     case 'Escape': 
       if (mouseLocked) {
         document.exitPointerLock();
         mouseLocked = false;
-        // Pause the game (optional)
         console.log("Game paused");
       }
       break;
@@ -122,6 +132,12 @@ window.addEventListener('keyup', (event) => {
     case 'KeyS': moveBackward = false; break;
     case 'KeyA': moveLeft = false; break;
     case 'KeyD': moveRight = false; break;
+    case 'ShiftLeft': 
+      flyUp = false; // Stop flying upwards
+      break;
+    case 'ControlLeft': 
+      flyDown = false; // Stop flying downwards
+      break;
   }
 });
 
@@ -165,20 +181,30 @@ function animate() {
   direction.applyQuaternion(playerMesh.quaternion);
   playerMesh.position.add(direction);
 
-  // Apply gravity and jump if Human
-  if (isJumping && isHuman) {
-    verticalSpeed += gravity;  // Apply gravity
-    playerMesh.position.y += verticalSpeed;  // Update player height
-
-    if (playerMesh.position.y <= groundLevel) {  // Stop falling at ground level
-      playerMesh.position.y = groundLevel;
-      isJumping = false;
-      verticalSpeed = 0;  // Reset vertical speed after landing
+  // Insect flying logic
+  if (isFlying) {
+    if (flyUp) {
+      playerMesh.position.y += flyingSpeed; // Fly upwards
     }
-  }
+    if (flyDown) {
+      playerMesh.position.y -= flyingSpeed; // Fly downwards
+    }
+  } else {
+    // Apply gravity and jump if Human
+    if (isJumping) {
+      verticalSpeed += gravity;  // Apply gravity
+      playerMesh.position.y += verticalSpeed;  // Update player height
 
-  // Ensure the player stays above the ground (no gravity in this simple example)
-  playerMesh.position.y = Math.max(playerMesh.position.y, groundLevel); // Keep player at ground level
+      if (playerMesh.position.y <= groundLevel) {  // Stop falling at ground level
+        playerMesh.position.y = groundLevel;
+        isJumping = false;
+        verticalSpeed = 0;  // Reset vertical speed after landing
+      }
+    }
+
+    // Ensure the player stays above the ground (no gravity in this simple example)
+    playerMesh.position.y = Math.max(playerMesh.position.y, groundLevel); // Keep player at ground level
+  }
 
   // Move projectiles
   for (let i = projectiles.length - 1; i >= 0; i--) {
@@ -192,8 +218,8 @@ function animate() {
     }
   }
 
-  // Send movement data to the server
-  socket.emit('move', { position: playerMesh.position });
+  // Emit movement data
+  socket.emit('move', { position: playerMesh.position, isFlying });
 
   renderer.render(scene, camera);
 }
@@ -235,36 +261,16 @@ socket.on('lobbyFull', () => {
   }, 1000); // Optional delay before starting
 });
 
-socket.on('startGame', () => {
-  console.log('Game has started!');
-  // Add any additional logic needed to transition to game mode here
-});
-
 // Assign roles to players
 socket.on('assignRole', (role) => {
-  isHuman = role === 'Human';
+  isFlying = role === 'Insect';
   console.log(`Player assigned role: ${role}`);
-  // Customize behavior based on the role
-  if (isHuman) {
-    console.log('You are playing as a Human!');
-  } else {
-    console.log('You are playing as an Insect!');
-  }
 });
 
 // Create directional light (sunlight)
 const sunlight = new THREE.DirectionalLight(0xffffff, 1);
 sunlight.position.set(50, 100, 50);
 sunlight.castShadow = true;
-
-sunlight.shadow.mapSize.width = 4096;
-sunlight.shadow.mapSize.height = 4096;
-sunlight.shadow.camera.near = 0.5;
-sunlight.shadow.camera.far = 500;
-sunlight.shadow.camera.left = -100;
-sunlight.shadow.camera.right = 100;
-sunlight.shadow.camera.top = 100;
-sunlight.shadow.camera.bottom = -100;
 
 scene.add(sunlight);
 
@@ -279,15 +285,6 @@ scene.add(hemisphereLight);
 // Enable shadows in the renderer
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-
-// Enable shadows for objects
-playerMesh.castShadow = true;
-playerMesh.receiveShadow = true;
-ground.receiveShadow = true;
-obstacles.forEach(obstacle => {
-  obstacle.castShadow = true;
-  obstacle.receiveShadow = true;
-});
 
 // Add a new player to the scene
 function addNewPlayer(id, position) {
