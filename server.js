@@ -77,7 +77,9 @@ io.on('connection', (socket) => {
         }
     });
 });
-
+io.on('assignRole', ()=>{
+    assignRoles
+});
 // Function to assign roles to players
 function assignRoles() {
     console.log('Assigning roles to players...');
@@ -99,7 +101,7 @@ function assignRoles() {
 // Function to start the game
 function startGame() {
     console.log('Starting the game...');
-    io.emit('startGame'); // Notify all players to start the game
+    io.emit('gameStarted'); // Notify all players to start the game
     // Additional game initialization logic can go here
 }
 
