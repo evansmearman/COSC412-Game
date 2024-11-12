@@ -165,6 +165,9 @@ function shootSphere() {
 
   scene.add(sphere);
   projectiles.push({ mesh: sphere, velocity });
+
+  // Emit projectile data to the server
+  socket.emit('shoot', { position: sphere.position, velocity: velocity });
 }
 
 // Animate and move player and projectiles
@@ -254,12 +257,30 @@ socket.on('playerDisconnected', (id) => {
 // Handle lobby events
 socket.on('lobbyFull', () => {
   console.log('Lobby is full! Starting the game...');
-  loadingMessage.innerText = 'Game starting...'; // Update loading message
-  setTimeout(() => {
-    loadingMessage.style.display = 'none'; // Hide the loading message
-    animate(); // Start the animation loop
-  }, 1000); // Optional delay before starting
+  loadingMessage.innerText = 'Lobby full! Click to start the game.'; // Update loading message
+  createStartGameButton(); // Show the start button
 });
+
+// Show the start game button for the host
+function createStartGameButton() {
+  const startButton = document.createElement('button');
+  startButton.innerText = 'Start Game';
+  startButton.style.position = 'absolute';
+  startButton.style.top = '70%';
+  startButton.style.left = '50%';
+  startButton.style.transform = 'translateX(-50%)';
+  startButton.style.padding = '10px 20px';
+  startButton.style.fontSize = '20px';
+
+  document.body.appendChild(startButton);
+
+  startButton.addEventListener('click', () => {
+    socket.emit('startGame'); // Emit event to the server to start the game
+    startButton.style.display = 'none'; // Hide the button
+    loadingMessage.style.display = 'none'; // Hide loading message
+    animate(); // Start the animation loop
+  });
+}
 
 // Assign roles to players
 socket.on('assignRole', (role) => {
@@ -267,7 +288,7 @@ socket.on('assignRole', (role) => {
   console.log(`Player assigned role: ${role}`);
 });
 
-// Create directional light (sunlight)
+// Add directional light (sunlight)
 const sunlight = new THREE.DirectionalLight(0xffffff, 1);
 sunlight.position.set(50, 100, 50);
 sunlight.castShadow = true;

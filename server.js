@@ -11,10 +11,16 @@ app.use(express.static('public'));
 let players = {};
 let lobby = [];
 const LOBBY_SIZE = 2; // Define the size of the lobby before starting the game
+let host = null; // To store the host (first player who joins)
 
 io.on('connection', (socket) => {
     console.log(`Player connected: ${socket.id}`);
-    
+
+    // If this is the first player, they are the host
+    if (lobby.length === 0) {
+        host = socket.id; // Set host as the first player
+    }
+
     // Add new player to the lobby
     lobby.push(socket.id);
     players[socket.id] = {
@@ -31,7 +37,7 @@ io.on('connection', (socket) => {
     // Check if the lobby is full
     if (lobby.length === LOBBY_SIZE) {
         io.emit('lobbyFull'); // Notify players that the lobby is full
-        assignRoles(); // Assign roles and start the game
+        io.to(host).emit('allowStartGame'); // Allow host to start the game
     }
 
     // When player moves, update the position
@@ -50,9 +56,24 @@ io.on('connection', (socket) => {
         lobby = lobby.filter(playerId => playerId !== socket.id); // Remove from lobby
         io.emit('playerDisconnected', socket.id);
 
+        // If the host disconnects, reassign the host to the first player
+        if (socket.id === host) {
+            host = lobby[0] || null; // Reassign host if possible
+            if (host) {
+                io.to(host).emit('allowStartGame'); // Notify new host that they can start the game
+            }
+        }
+
         // Optionally handle lobby reset if necessary
         if (lobby.length < LOBBY_SIZE) {
             console.log('Lobby is no longer full. Waiting for more players...');
+        }
+    });
+
+    // Handle start game event from the host
+    socket.on('startGame', () => {
+        if (socket.id === host) {
+            startGame(); // Only the host can start the game
         }
     });
 });
