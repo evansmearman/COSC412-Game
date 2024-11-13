@@ -55,7 +55,17 @@ io.on('connection', (socket) => {
             console.log('Lobby is no longer full. Waiting for more players...');
         }
     });
+    socket.on('shoot', (data) => {
+        // Broadcast the shoot event to all other players
+        socket.broadcast.emit('shoot', {
+            id: socket.id,
+            position: data.position,
+            velocity: data.velocity,
+        });
+    });
+    
 });
+
 
 // Function to assign roles to players
 function assignRoles() {
