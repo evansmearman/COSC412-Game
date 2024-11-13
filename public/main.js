@@ -267,21 +267,26 @@ socket.on('assignRole', (role) => {
   console.log(`Player assigned role: ${role}`);
 });
 
-// Create directional light (sunlight)
-const sunlight = new THREE.DirectionalLight(0xffffff, 1);
-sunlight.position.set(50, 100, 50);
-sunlight.castShadow = true;
-
-scene.add(sunlight);
-
-// Add ambient light (soft global lighting)
-const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
+const ambientLight = new THREE.AmbientLight(0x404040, 1.5); // Soft ambient light
 scene.add(ambientLight);
 
-// Add hemisphere light (sky and ground light)
-const hemisphereLight = new THREE.HemisphereLight(0x87CEEB, 0x228B22, 0.7);
-scene.add(hemisphereLight);
+const sunlight = new THREE.DirectionalLight(0xffffff, 1.2);
+sunlight.position.set(10, 50, 10);
+sunlight.castShadow = true;
+sunlight.shadow.mapSize.width = 1024;
+sunlight.shadow.mapSize.height = 1024;
+sunlight.shadow.camera.near = 0.5;
+sunlight.shadow.camera.far = 100;
+scene.add(sunlight);
 
+const spotlight = new THREE.SpotLight(0xffffff, 0.5);
+spotlight.position.set(0, 10, 0);
+spotlight.castShadow = true;
+spotlight.angle = Math.PI / 4;
+spotlight.penumbra = 0.2;
+spotlight.decay = 2;
+spotlight.distance = 50;
+scene.add(spotlight);
 // Enable shadows in the renderer
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
