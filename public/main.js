@@ -50,15 +50,29 @@ const ground = new THREE.Mesh(groundGeometry, groundMaterial);
 ground.rotation.x = -Math.PI / 2;
 scene.add(ground);
 
-// Obstacles (no physics for simplicity)
+
+// Obstacle setup with physics for Cannon.js
 const obstacleGeometry = new THREE.BoxGeometry(2, 2, 2);
 const obstacleMaterial = new THREE.MeshBasicMaterial({ color: 0x8B4513 });
 const obstacles = [];
+const obstacleBodies = []; // Store the obstacle bodies for physics
+
 for (let i = 0; i < 5; i++) {
+  // Create the visual obstacle mesh in Three.js
   const obstacle = new THREE.Mesh(obstacleGeometry, obstacleMaterial);
   obstacle.position.set((Math.random() - 0.5) * 80, 1, (Math.random() - 0.5) * 80);
   scene.add(obstacle);
   obstacles.push(obstacle);
+
+  // Create the physics body for each obstacle in Cannon.js
+  const obstacleShape = new CANNON.Box(new CANNON.Vec3(1, 1, 1)); // Size matches Three.js obstacle
+  const obstacleBody = new CANNON.Body({
+    mass: 0, // Static obstacle
+    position: new CANNON.Vec3(obstacle.position.x, obstacle.position.y, obstacle.position.z),
+  });
+  obstacleBody.addShape(obstacleShape);
+  world.addBody(obstacleBody);
+  obstacleBodies.push(obstacleBody);
 }
 
 // Movement, control, and role variables
@@ -139,7 +153,7 @@ window.addEventListener('mousedown', (event) => {
 // Shoot a sphere with physics
 function shootSphere() {
   const sphereRadius = 0.1;
-  const sphereMass = 0.1;
+  const sphereMass = 0.001;
 
   const sphereGeometry = new THREE.SphereGeometry(sphereRadius, 8, 8);
   const sphereMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
@@ -182,7 +196,40 @@ function updateProjectiles() {
     }
   }
 }
+const ambientLight = new THREE.AmbientLight(0x404040, 2); // Increased intensity
+scene.add(ambientLight);
 
+// Hemisphere light to simulate natural lighting with a slight sky color and ground color
+const hemisphereLight = new THREE.HemisphereLight(0x87CEEB, 0x555555, 0.5); // Sky color and ground color
+scene.add(hemisphereLight);
+
+// Sunlight with higher intensity and sharper shadows
+const sunlight = new THREE.DirectionalLight(0xffffff, 1.5);
+sunlight.position.set(10, 50, 10);
+sunlight.castShadow = true;
+sunlight.shadow.mapSize.width = 2048; // Higher resolution shadows
+sunlight.shadow.mapSize.height = 2048;
+sunlight.shadow.camera.near = 0.5;
+sunlight.shadow.camera.far = 200;
+sunlight.shadow.camera.left = -50;
+sunlight.shadow.camera.right = 50;
+sunlight.shadow.camera.top = 50;
+sunlight.shadow.camera.bottom = -50;
+scene.add(sunlight);
+
+// Focused spotlight for added effect
+const spotlight = new THREE.SpotLight(0xffffff, 1);
+spotlight.position.set(0, 15, 0);
+spotlight.castShadow = true;
+spotlight.angle = Math.PI / 6; // Narrower angle for a focused effect
+spotlight.penumbra = 0.3; // Softer edges
+spotlight.decay = 2;
+spotlight.distance = 100;
+scene.add(spotlight);
+
+// Enable shadows in the renderer
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Soft shadows for realism
 // Animate and update world
 function animate() {
   requestAnimationFrame(animate);
@@ -275,29 +322,6 @@ socket.on('assignRole', (role) => {
   console.log(`Player assigned role: ${role}`);
 });
 
-const ambientLight = new THREE.AmbientLight(0x404040, 1.5); // Soft ambient light
-scene.add(ambientLight);
-
-const sunlight = new THREE.DirectionalLight(0xffffff, 1.2);
-sunlight.position.set(10, 50, 10);
-sunlight.castShadow = true;
-sunlight.shadow.mapSize.width = 1024;
-sunlight.shadow.mapSize.height = 1024;
-sunlight.shadow.camera.near = 0.5;
-sunlight.shadow.camera.far = 100;
-scene.add(sunlight);
-
-const spotlight = new THREE.SpotLight(0xffffff, 0.5);
-spotlight.position.set(0, 10, 0);
-spotlight.castShadow = true;
-spotlight.angle = Math.PI / 4;
-spotlight.penumbra = 0.2;
-spotlight.decay = 2;
-spotlight.distance = 50;
-scene.add(spotlight);
-// Enable shadows in the renderer
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
 // Add a new player to the scene
 function addNewPlayer(id, position) {
