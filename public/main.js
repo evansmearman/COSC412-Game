@@ -50,12 +50,13 @@ const ground = new THREE.Mesh(groundGeometry, groundMaterial);
 ground.rotation.x = -Math.PI / 2;
 scene.add(ground);
 
-
 // Obstacle setup with physics for Cannon.js
 const obstacleGeometry = new THREE.BoxGeometry(2, 2, 2);
 const obstacleMaterial = new THREE.MeshBasicMaterial({ color: 0x8B4513 });
 const obstacles = [];
 const obstacleBodies = []; // Store the obstacle bodies for physics
+const obstacleHealth = [];
+const healthBars = [];
 
 for (let i = 0; i < 5; i++) {
   // Create the visual obstacle mesh in Three.js
@@ -73,6 +74,18 @@ for (let i = 0; i < 5; i++) {
   obstacleBody.addShape(obstacleShape);
   world.addBody(obstacleBody);
   obstacleBodies.push(obstacleBody);
+
+  // Set initial health for each obstacle
+  obstacleHealth[i] = 100; // Example health value
+
+  // Create health bar for the obstacle
+  const healthBarGeometry = new THREE.PlaneGeometry(1.5, 0.2); // Adjust size as needed
+  const healthBarMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+  const healthBar = new THREE.Mesh(healthBarGeometry, healthBarMaterial);
+  healthBar.position.set(obstacle.position.x, obstacle.position.y + 1.5, obstacle.position.z);
+  healthBar.lookAt(camera.position); // Make it face the camera
+  scene.add(healthBar);
+  healthBars.push(healthBar);
 }
 
 // Movement, control, and role variables
@@ -150,7 +163,6 @@ window.addEventListener('mousedown', (event) => {
   if (event.button === 0) shootSphere();
 });
 
-
 function shootSphere() {
   const sphereRadius = 0.1;
   const sphereMass = 0.001;
@@ -159,8 +171,10 @@ function shootSphere() {
   const sphereMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
   const sphereMesh = new THREE.Mesh(sphereGeometry, sphereMaterial);
 
-  sphereMesh.position.copy(playerMesh.position);
-  sphereMesh.position.y += 1.6;
+  // Set the initial position of the sphere slightly in front of the player
+  const startPosition = new THREE.Vector3();
+  camera.getWorldPosition(startPosition);
+  sphereMesh.position.copy(startPosition);
 
   // Cannon.js body for the sphere
   const sphereShape = new CANNON.Sphere(sphereRadius);
@@ -172,34 +186,47 @@ function shootSphere() {
     sphereMesh.position.z
   );
 
-  const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).normalize();
+  // Calculate the direction vector from the camera's orientation
+  const direction = new THREE.Vector3(0, 0, -1);
+  direction.applyQuaternion(camera.quaternion).normalize();
   sphereBody.velocity.set(direction.x * 10, direction.y * 10, direction.z * 10);
 
   // Collision detection on projectile
   sphereBody.addEventListener('collide', (event) => {
     const collidedBody = event.body;
 
-    // Check if it hit an obstacle
     if (obstacleBodies.includes(collidedBody)) {
-      console.log('Projectile hit an obstacle!');
-
-      // Find the index of the obstacle
       const obstacleIndex = obstacleBodies.indexOf(collidedBody);
       if (obstacleIndex > -1) {
-        // Remove the obstacle from the scene and world
-        scene.remove(obstacles[obstacleIndex]);
-        world.removeBody(obstacleBodies[obstacleIndex]);
-        obstacles.splice(obstacleIndex, 1);
-        obstacleBodies.splice(obstacleIndex, 1);
+        // Deduct health on hit
+        obstacleHealth[obstacleIndex] -= 20; // Adjust damage value as needed
 
-        // Create particle effect at the collision point
-        createParticleEffect(sphereMesh.position);
+        // Update health bar size and color
+        const healthPercentage = Math.max(0, obstacleHealth[obstacleIndex] / 100);
+        healthBars[obstacleIndex].scale.set(healthPercentage, 1, 1);
+        healthBars[obstacleIndex].material.color.setHex(
+          healthPercentage > 0.5 ? 0x00ff00 : (healthPercentage > 0.25 ? 0xffff00 : 0xff0000)
+        );
+
+        if (obstacleHealth[obstacleIndex] <= 0) {
+          // Remove obstacle when health is depleted
+          scene.remove(obstacles[obstacleIndex]);
+          scene.remove(healthBars[obstacleIndex]);
+          world.removeBody(obstacleBodies[obstacleIndex]);
+          obstacles.splice(obstacleIndex, 1);
+          obstacleBodies.splice(obstacleIndex, 1);
+          obstacleHealth.splice(obstacleIndex, 1);
+          healthBars.splice(obstacleIndex, 1);
+
+          // Optional: Create particle effect at the collision point
+          createParticleEffect(sphereMesh.position);
+        }
+
+        // Remove the projectile
+        scene.remove(sphereMesh);
+        world.removeBody(sphereBody);
+        projectiles = projectiles.filter(p => p.body !== sphereBody);
       }
-
-      // Remove the projectile
-      scene.remove(sphereMesh);
-      world.removeBody(sphereBody);
-      projectiles = projectiles.filter(p => p.body !== sphereBody);
     }
   });
 
@@ -207,7 +234,6 @@ function shootSphere() {
   world.addBody(sphereBody);
   projectiles.push({ mesh: sphereMesh, body: sphereBody });
   socket.emit('shoot', { position: sphereMesh.position, velocity: sphereBody.velocity });
-
 }
 
 // Function to create a particle effect at a collision position
@@ -220,10 +246,7 @@ function createParticleEffect(position) {
     const particleMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
     const particle = new THREE.Mesh(particleGeometry, particleMaterial);
 
-    // Set initial position of particles at the collision point
     particle.position.copy(position);
-
-    // Give each particle a random velocity for dispersal
     particle.velocity = new THREE.Vector3(
       (Math.random() - 0.5) * 2,
       (Math.random() - 0.5) * 2,
@@ -235,19 +258,16 @@ function createParticleEffect(position) {
 
   scene.add(particles);
 
-  // Animate the particles for a short time before removing them
   setTimeout(() => {
     scene.remove(particles);
   }, 500);
 
-  // Update particles in the animation loop
   const animateParticles = () => {
     particles.children.forEach((particle) => {
       particle.position.add(particle.velocity);
-      particle.material.opacity -= 0.02; // Fade out effect
+      particle.material.opacity -= 0.02;
     });
 
-    // Continue to animate particles while they're still visible
     if (particles.children.some(p => p.material.opacity > 0)) {
       requestAnimationFrame(animateParticles);
     } else {
@@ -257,7 +277,6 @@ function createParticleEffect(position) {
   animateParticles();
 }
 
-// Update projectiles
 function updateProjectiles() {
   for (let i = projectiles.length - 1; i >= 0; i--) {
     const projectile = projectiles[i];
@@ -271,49 +290,32 @@ function updateProjectiles() {
     }
   }
 }
-const ambientLight = new THREE.AmbientLight(0x404040, 2); // Increased intensity
+
+const ambientLight = new THREE.AmbientLight(0x404040, 2);
 scene.add(ambientLight);
 
-// Hemisphere light to simulate natural lighting with a slight sky color and ground color
-const hemisphereLight = new THREE.HemisphereLight(0x87CEEB, 0x555555, 0.5); // Sky color and ground color
+const hemisphereLight = new THREE.HemisphereLight(0x87CEEB, 0x555555, 0.5);
 scene.add(hemisphereLight);
 
-// Sunlight with higher intensity and sharper shadows
 const sunlight = new THREE.DirectionalLight(0xffffff, 1.5);
 sunlight.position.set(10, 50, 10);
 sunlight.castShadow = true;
-sunlight.shadow.mapSize.width = 2048; // Higher resolution shadows
-sunlight.shadow.mapSize.height = 2048;
-sunlight.shadow.camera.near = 0.5;
-sunlight.shadow.camera.far = 200;
-sunlight.shadow.camera.left = -50;
-sunlight.shadow.camera.right = 50;
-sunlight.shadow.camera.top = 50;
-sunlight.shadow.camera.bottom = -50;
 scene.add(sunlight);
 
-// Focused spotlight for added effect
 const spotlight = new THREE.SpotLight(0xffffff, 1);
 spotlight.position.set(0, 15, 0);
 spotlight.castShadow = true;
-spotlight.angle = Math.PI / 6; // Narrower angle for a focused effect
-spotlight.penumbra = 0.3; // Softer edges
-spotlight.decay = 2;
-spotlight.distance = 100;
 scene.add(spotlight);
 
-// Enable shadows in the renderer
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Soft shadows for realism
-// Animate and update world
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
 function animate() {
   requestAnimationFrame(animate);
-  world.step(1 / 60);  // Update physics
+  world.step(1 / 60);
 
-  // Update projectiles
   updateProjectiles();
 
-  // Existing player movement and game logic
   let direction = new THREE.Vector3();
   if (moveForward) direction.z -= playerSpeed;
   if (moveBackward) direction.z += playerSpeed;
@@ -342,7 +344,6 @@ function animate() {
   renderer.render(scene, camera);
 }
 
-// Listen for networked shots
 socket.on('shoot', (data) => {
   const sphereGeometry = new THREE.SphereGeometry(0.1, 8, 8);
   const sphereMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
@@ -353,8 +354,6 @@ socket.on('shoot', (data) => {
   projectiles.push({ mesh: sphere, velocity: new THREE.Vector3(data.velocity.x, data.velocity.y, data.velocity.z) });
 });
 
-
-// Handle other players
 socket.on('currentPlayers', (players) => {
   Object.keys(players).forEach((id) => {
     if (id !== socket.id) {
@@ -381,24 +380,20 @@ socket.on('playerDisconnected', (id) => {
   }
 });
 
-// Handle lobby events
 socket.on('lobbyFull', () => {
   console.log('Lobby is full! Starting the game...');
-  loadingMessage.innerText = 'Game starting...'; // Update loading message
+  loadingMessage.innerText = 'Game starting...';
   setTimeout(() => {
-    loadingMessage.style.display = 'none'; // Hide the loading message
-    animate(); // Start the animation loop
-  }, 1000); // Optional delay before starting
+    loadingMessage.style.display = 'none';
+    animate();
+  }, 1000);
 });
 
-// Assign roles to players
 socket.on('assignRole', (role) => {
   isFlying = role === 'Insect';
   console.log(`Player assigned role: ${role}`);
 });
 
-
-// Add a new player to the scene
 function addNewPlayer(id, position) {
   const otherPlayerMesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ color: 0xff0000 }));
   otherPlayerMesh.position.set(position.x, position.y, position.z);
