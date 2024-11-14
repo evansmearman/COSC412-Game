@@ -150,7 +150,7 @@ window.addEventListener('mousedown', (event) => {
   if (event.button === 0) shootSphere();
 });
 
-// Shoot a sphere with physics
+
 function shootSphere() {
   const sphereRadius = 0.1;
   const sphereMass = 0.001;
@@ -175,13 +175,27 @@ function shootSphere() {
   const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).normalize();
   sphereBody.velocity.set(direction.x * 10, direction.y * 10, direction.z * 10);
 
+  // Collision detection on projectile
+  sphereBody.addEventListener('collide', (event) => {
+    const collidedBody = event.body;
+    if (obstacleBodies.includes(collidedBody)) {
+      console.log('Projectile hit an obstacle!');
+      // Optional: Remove the projectile upon collision
+      scene.remove(sphereMesh);
+      world.removeBody(sphereBody);
+      // Remove from projectiles array
+      scene.remove(collidedBody)
+      
+      projectiles = projectiles.filter(p => p.body !== sphereBody);
+    }
+  });
+
   scene.add(sphereMesh);
   world.addBody(sphereBody);
   projectiles.push({ mesh: sphereMesh, body: sphereBody });
-
   socket.emit('shoot', { position: sphereMesh.position, velocity: sphereBody.velocity });
-}
 
+}
 // Update projectiles
 function updateProjectiles() {
   for (let i = projectiles.length - 1; i >= 0; i--) {
