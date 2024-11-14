@@ -178,14 +178,27 @@ function shootSphere() {
   // Collision detection on projectile
   sphereBody.addEventListener('collide', (event) => {
     const collidedBody = event.body;
+
+    // Check if it hit an obstacle
     if (obstacleBodies.includes(collidedBody)) {
       console.log('Projectile hit an obstacle!');
-      // Optional: Remove the projectile upon collision
+
+      // Find the index of the obstacle
+      const obstacleIndex = obstacleBodies.indexOf(collidedBody);
+      if (obstacleIndex > -1) {
+        // Remove the obstacle from the scene and world
+        scene.remove(obstacles[obstacleIndex]);
+        world.removeBody(obstacleBodies[obstacleIndex]);
+        obstacles.splice(obstacleIndex, 1);
+        obstacleBodies.splice(obstacleIndex, 1);
+
+        // Create particle effect at the collision point
+        createParticleEffect(sphereMesh.position);
+      }
+
+      // Remove the projectile
       scene.remove(sphereMesh);
       world.removeBody(sphereBody);
-      // Remove from projectiles array
-      scene.remove(collidedBody)
-      
       projectiles = projectiles.filter(p => p.body !== sphereBody);
     }
   });
@@ -196,6 +209,54 @@ function shootSphere() {
   socket.emit('shoot', { position: sphereMesh.position, velocity: sphereBody.velocity });
 
 }
+
+// Function to create a particle effect at a collision position
+function createParticleEffect(position) {
+  const particleCount = 30;
+  const particles = new THREE.Group();
+
+  for (let i = 0; i < particleCount; i++) {
+    const particleGeometry = new THREE.SphereGeometry(0.05, 4, 4);
+    const particleMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+    const particle = new THREE.Mesh(particleGeometry, particleMaterial);
+
+    // Set initial position of particles at the collision point
+    particle.position.copy(position);
+
+    // Give each particle a random velocity for dispersal
+    particle.velocity = new THREE.Vector3(
+      (Math.random() - 0.5) * 2,
+      (Math.random() - 0.5) * 2,
+      (Math.random() - 0.5) * 2
+    );
+
+    particles.add(particle);
+  }
+
+  scene.add(particles);
+
+  // Animate the particles for a short time before removing them
+  setTimeout(() => {
+    scene.remove(particles);
+  }, 500);
+
+  // Update particles in the animation loop
+  const animateParticles = () => {
+    particles.children.forEach((particle) => {
+      particle.position.add(particle.velocity);
+      particle.material.opacity -= 0.02; // Fade out effect
+    });
+
+    // Continue to animate particles while they're still visible
+    if (particles.children.some(p => p.material.opacity > 0)) {
+      requestAnimationFrame(animateParticles);
+    } else {
+      scene.remove(particles);
+    }
+  };
+  animateParticles();
+}
+
 // Update projectiles
 function updateProjectiles() {
   for (let i = projectiles.length - 1; i >= 0; i--) {
