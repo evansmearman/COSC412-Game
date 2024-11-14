@@ -1,3 +1,7 @@
+
+import * as THREE from 'three';
+import * as CANNON from 'cannon-es';
+import { io } from 'socket.io-client';
 const socket = io();
 
 // Create Three.js scene
@@ -174,7 +178,9 @@ function shootSphere() {
   // Set the initial position of the sphere slightly in front of the player
   const startPosition = new THREE.Vector3();
   camera.getWorldPosition(startPosition);
-  sphereMesh.position.copy(startPosition);
+  const forwardDirection = new THREE.Vector3();
+  camera.getWorldDirection(forwardDirection);
+  sphereMesh.position.copy(startPosition.add(forwardDirection.multiplyScalar(1.5)));
 
   // Cannon.js body for the sphere
   const sphereShape = new CANNON.Sphere(sphereRadius);
@@ -186,55 +192,64 @@ function shootSphere() {
     sphereMesh.position.z
   );
 
-  // Calculate the direction vector from the camera's orientation
-  const direction = new THREE.Vector3(0, 0, -1);
-  direction.applyQuaternion(camera.quaternion).normalize();
-  sphereBody.velocity.set(direction.x * 10, direction.y * 10, direction.z * 10);
+  // Set the sphere's velocity in the direction the camera is facing
+  const velocity = forwardDirection.multiplyScalar(10); // Adjust speed multiplier as needed
+  sphereBody.velocity.set(velocity.x, velocity.y, velocity.z);
+
+  // Set gravity to zero initially
+  sphereBody.gravityScale = 0; // Custom property to control gravity activation later
+  world.addBody(sphereBody);
 
   // Collision detection on projectile
   sphereBody.addEventListener('collide', (event) => {
     const collidedBody = event.body;
 
-    if (obstacleBodies.includes(collidedBody)) {
-      const obstacleIndex = obstacleBodies.indexOf(collidedBody);
-      if (obstacleIndex > -1) {
-        // Deduct health on hit
-        obstacleHealth[obstacleIndex] -= 20; // Adjust damage value as needed
+    if (obstacleBodies.includes(collidedBody) || collidedBody === groundBody) {
+      // Activate gravity by setting the gravity scale to 1
+      sphereBody.gravityScale = 1;
+      
+      // Reapply gravity to the body after collision
+      sphereBody.force.set(0, -world.gravity.y * sphereBody.mass, 0);
+      
+      // Optional: Handle collision with obstacle to reduce its health
+      if (obstacleBodies.includes(collidedBody)) {
+        const obstacleIndex = obstacleBodies.indexOf(collidedBody);
+        if (obstacleIndex > -1) {
+          obstacleHealth[obstacleIndex] -= 20;
 
-        // Update health bar size and color
-        const healthPercentage = Math.max(0, obstacleHealth[obstacleIndex] / 100);
-        healthBars[obstacleIndex].scale.set(healthPercentage, 1, 1);
-        healthBars[obstacleIndex].material.color.setHex(
-          healthPercentage > 0.5 ? 0x00ff00 : (healthPercentage > 0.25 ? 0xffff00 : 0xff0000)
-        );
+          const healthPercentage = Math.max(0, obstacleHealth[obstacleIndex] / 100);
+          healthBars[obstacleIndex].scale.set(healthPercentage, 1, 1);
+          healthBars[obstacleIndex].material.color.setHex(
+            healthPercentage > 0.5 ? 0x00ff00 : (healthPercentage > 0.25 ? 0xffff00 : 0xff0000)
+          );
 
-        if (obstacleHealth[obstacleIndex] <= 0) {
-          // Remove obstacle when health is depleted
-          scene.remove(obstacles[obstacleIndex]);
-          scene.remove(healthBars[obstacleIndex]);
-          world.removeBody(obstacleBodies[obstacleIndex]);
-          obstacles.splice(obstacleIndex, 1);
-          obstacleBodies.splice(obstacleIndex, 1);
-          obstacleHealth.splice(obstacleIndex, 1);
-          healthBars.splice(obstacleIndex, 1);
+          if (obstacleHealth[obstacleIndex] <= 0) {
+            scene.remove(obstacles[obstacleIndex]);
+            scene.remove(healthBars[obstacleIndex]);
+            world.removeBody(obstacleBodies[obstacleIndex]);
+            obstacles.splice(obstacleIndex, 1);
+            obstacleBodies.splice(obstacleIndex, 1);
+            obstacleHealth.splice(obstacleIndex, 1);
+            healthBars.splice(obstacleIndex, 1);
 
-          // Optional: Create particle effect at the collision point
-          createParticleEffect(sphereMesh.position);
+            // Optional: Create particle effect at the collision point
+            createParticleEffect(sphereMesh.position);
+          }
         }
-
-        // Remove the projectile
-        scene.remove(sphereMesh);
-        world.removeBody(sphereBody);
-        projectiles = projectiles.filter(p => p.body !== sphereBody);
       }
+
+      // Remove the projectile upon collision
+      scene.remove(sphereMesh);
+      world.removeBody(sphereBody);
+      projectiles = projectiles.filter(p => p.body !== sphereBody);
     }
   });
 
   scene.add(sphereMesh);
-  world.addBody(sphereBody);
   projectiles.push({ mesh: sphereMesh, body: sphereBody });
   socket.emit('shoot', { position: sphereMesh.position, velocity: sphereBody.velocity });
 }
+
 
 // Function to create a particle effect at a collision position
 function createParticleEffect(position) {
