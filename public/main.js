@@ -131,6 +131,41 @@ playerMesh.add(camera); // Attach camera to player mesh
 // ground.rotation.x = -Math.PI / 2;
 // scene.add(ground);
 
+
+// Create a barrier around the model
+const barrierSize = 110; // Define the approximate boundary size around your model
+const barrierHeight = 110; // Define the height of the walls
+
+// Create four barriers (left, right, front, back)
+
+const wallMateria2 = new CANNON.Material();
+const barriers = [
+  { position: new CANNON.Vec3(-barrierSize, barrierHeight / 2, 0), rotation: new CANNON.Vec3(0, Math.PI / 2, 0) }, // Left wall
+  { position: new CANNON.Vec3(barrierSize, barrierHeight / 2, 0), rotation: new CANNON.Vec3(0, -Math.PI / 2, 0) }, // Right wall
+  { position: new CANNON.Vec3(0, barrierHeight / 2, -barrierSize), rotation: new CANNON.Vec3(0, 0, 0) }, // Back wall
+  { position: new CANNON.Vec3(0, barrierHeight / 2, barrierSize), rotation: new CANNON.Vec3(0, Math.PI, 0) } // Front wall
+];
+
+barriers.forEach((barrier) => {
+  const wallShape = new CANNON.Box(new CANNON.Vec3(0.5, barrierHeight, barrierSize));
+  const wallBody = new CANNON.Body({
+    mass: 0, // Static wall
+    position: barrier.position,
+    material: wallMateria2
+  });
+  wallBody.addShape(wallShape);
+  wallBody.quaternion.setFromEuler(barrier.rotation.x, barrier.rotation.y, barrier.rotation.z);
+  world.addBody(wallBody);
+  
+  // Optional: Add a Three.js invisible wall to visualize the boundary
+  const wallGeometry = new THREE.BoxGeometry(1, barrierHeight * 2, barrierSize * 2);
+  const wallMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000, transparent: true, opacity: 0.1 });
+  const wallMesh = new THREE.Mesh(wallGeometry, wallMaterial);
+  wallMesh.position.copy(barrier.position);
+  wallMesh.rotation.set(barrier.rotation.x, barrier.rotation.y, barrier.rotation.z);
+  scene.add(wallMesh);
+});
+
 // Obstacle setup with physics for Cannon.js
 const obstacleGeometry = new THREE.BoxGeometry(2, 2, 2);
 const obstacleMaterial = new THREE.MeshBasicMaterial({ color: 0x8B4513 });
