@@ -62,7 +62,7 @@ const obstacleBodies = []; // Store the obstacle bodies for physics
 const obstacleHealth = [];
 const healthBars = [];
 
-for (let i = 0; i < 5; i++) {
+for (let i = 0; i < 15; i++) {
   // Create the visual obstacle mesh in Three.js
   const obstacle = new THREE.Mesh(obstacleGeometry, obstacleMaterial);
   obstacle.position.set((Math.random() - 0.5) * 80, 1, (Math.random() - 0.5) * 80);
@@ -169,7 +169,7 @@ window.addEventListener('mousedown', (event) => {
 
 function shootSphere() {
   const sphereRadius = 0.1;
-  const sphereMass = 0.001;
+  const sphereMass = 0.1;
 
   const sphereGeometry = new THREE.SphereGeometry(sphereRadius, 8, 8);
   const sphereMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
@@ -193,7 +193,7 @@ function shootSphere() {
   );
 
   // Set the sphere's velocity in the direction the camera is facing
-  const velocity = forwardDirection.multiplyScalar(10); // Adjust speed multiplier as needed
+  const velocity = forwardDirection.multiplyScalar(150); // Adjust speed multiplier as needed
   sphereBody.velocity.set(velocity.x, velocity.y, velocity.z);
 
   // Set gravity to zero initially
@@ -236,6 +236,20 @@ function shootSphere() {
             createParticleEffect(sphereMesh.position);
           }
         }
+        if (obstacleBodies.includes(collidedBody) || collidedBody === groundBody) {
+      // Enable gravity by setting gravity scale to 1
+      sphereBody.gravityScale = 1;
+
+      // Reapply gravity to the body after collision
+      sphereBody.force.set(0, -world.gravity.y * sphereBody.mass, 0);
+
+      // Optional: Remove sphere upon collision
+      scene.remove(sphereMesh);
+      world.removeBody(sphereBody);
+      projectiles = projectiles.filter(p => p.body !== sphereBody);
+    }
+
+
       }
 
       // Remove the projectile upon collision
@@ -258,14 +272,16 @@ function createParticleEffect(position) {
 
   for (let i = 0; i < particleCount; i++) {
     const particleGeometry = new THREE.SphereGeometry(0.05, 4, 4);
-    const particleMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+    const particleMaterial = new THREE.MeshBasicMaterial({ color: 0x8B0000 }); // Dark red color for blood
     const particle = new THREE.Mesh(particleGeometry, particleMaterial);
 
     particle.position.copy(position);
+    
+    // Spread out horizontally with slight vertical variation for splatter effect
     particle.velocity = new THREE.Vector3(
-      (Math.random() - 0.5) * 2,
-      (Math.random() - 0.5) * 2,
-      (Math.random() - 0.5) * 2
+      (Math.random() - 0.5) * 4, // Wider horizontal spread
+      (Math.random() - 0.25) * 2, // Lower vertical spread
+      (Math.random() - 0.5) * 4
     );
 
     particles.add(particle);
@@ -273,16 +289,19 @@ function createParticleEffect(position) {
 
   scene.add(particles);
 
+  // Remove particles after some time
   setTimeout(() => {
     scene.remove(particles);
   }, 500);
 
+  // Animate particles to give a splattering effect
   const animateParticles = () => {
     particles.children.forEach((particle) => {
       particle.position.add(particle.velocity);
-      particle.material.opacity -= 0.02;
+      particle.material.opacity -= 0.03; // Fade out over time
     });
 
+    // Check if any particles still have opacity left to continue animation
     if (particles.children.some(p => p.material.opacity > 0)) {
       requestAnimationFrame(animateParticles);
     } else {
@@ -291,7 +310,6 @@ function createParticleEffect(position) {
   };
   animateParticles();
 }
-
 function updateProjectiles() {
   for (let i = projectiles.length - 1; i >= 0; i--) {
     const projectile = projectiles[i];
@@ -342,7 +360,11 @@ function animate() {
   if (isFlying) {
     if (flyUp) playerMesh.position.y += flyingSpeed;
     if (flyDown) playerMesh.position.y -= flyingSpeed;
+
+    // Prevent the insect from flying below the ground level
+    playerMesh.position.y = Math.max(playerMesh.position.y, groundLevel);
   } else {
+    // Handle gravity and jumping for non-flying players
     if (isJumping) {
       verticalSpeed += gravity;
       playerMesh.position.y += verticalSpeed;
@@ -355,9 +377,11 @@ function animate() {
     playerMesh.position.y = Math.max(playerMesh.position.y, groundLevel);
   }
 
+  // Sync player position with server
   socket.emit('move', { position: playerMesh.position, isFlying });
   renderer.render(scene, camera);
 }
+
 
 socket.on('shoot', (data) => {
   const sphereGeometry = new THREE.SphereGeometry(0.1, 8, 8);
