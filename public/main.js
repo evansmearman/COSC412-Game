@@ -1,4 +1,3 @@
-
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { io } from 'socket.io-client';
@@ -43,9 +42,11 @@ scene.add(playerMesh);
 // Store other players
 let otherPlayers = {};
 
-// Set camera position and first-person view
-camera.position.set(0, 1.6, 0);
-playerMesh.add(camera);
+const spawnHeight = 2; // Adjust as needed to set initial spawn height above ground
+camera.position.set(0, spawnHeight, 0); // Place the camera at a height above ground
+playerMesh.position.set(0, spawnHeight, 0); // Place the player mesh at the same height
+playerMesh.add(camera); // Attach camera to player mesh
+
 
 // Ground plane
 const groundGeometry = new THREE.PlaneGeometry(100, 100);
