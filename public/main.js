@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { io } from 'socket.io-client';
 const socket = io();
 
@@ -45,9 +46,35 @@ const playerMesh = new THREE.Mesh(geometry, material);
 scene.background = new THREE.Color(0x87CEEB);
 scene.add(playerMesh);
 
+
+const loader = new GLTFLoader();
+loader.load(
+  'assets/untitled.glb', // Path to the GLB file
+  (gltf) => {
+    const glbScene = gltf.scene;
+    glbScene.traverse((child) => {
+      if (child.isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+    scene.add(glbScene);
+  },
+  (xhr) => {
+    console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+  },
+  (error) => {
+    console.error('An error happened while loading the .glb file:', error);
+  }
+);
+
+
+
+
+
 // LIGHTS
 
-const hemiLight = new THREE.HemisphereLight( 0xffffff, 0xffffff, 2 );
+const hemiLight = new THREE.HemisphereLight( 0x87CEEB, 0xffffff, 1 );
 hemiLight.color.setHSL( 0.6, 1, 0.6 );
 hemiLight.groundColor.setHSL( 0.0001, 1, 0.75 );
 hemiLight.position.set( 0, 50, 0 );
@@ -69,7 +96,7 @@ dirLight.castShadow = true;
 dirLight.shadow.mapSize.width = 2048;
 dirLight.shadow.mapSize.height = 2048;
 
-const d = 50;
+const d = 500;
 
 dirLight.shadow.camera.left = - d;
 dirLight.shadow.camera.right = d;
@@ -95,14 +122,14 @@ playerMesh.add(camera); // Attach camera to player mesh
 
 
 // Ground plane
-const groundGeometry = new THREE.PlaneGeometry(1000, 1000);
-const groundMaterial = new THREE.MeshBasicMaterial({ color: 0x228B22, side: THREE.DoubleSide });
+// const groundGeometry = new THREE.PlaneGeometry(1000, 1000);
+// const groundMaterial = new THREE.MeshBasicMaterial({ color: 0x228B22, side: THREE.DoubleSide });
 
-const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-ground.receiveShadow = true; // Receive shadows from lights
+// const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+// ground.receiveShadow = true; // Receive shadows from lights
 
-ground.rotation.x = -Math.PI / 2;
-scene.add(ground);
+// ground.rotation.x = -Math.PI / 2;
+// scene.add(ground);
 
 // Obstacle setup with physics for Cannon.js
 const obstacleGeometry = new THREE.BoxGeometry(2, 2, 2);
@@ -112,10 +139,10 @@ const obstacleBodies = []; // Store the obstacle bodies for physics
 const obstacleHealth = [];
 const healthBars = [];
 
-for (let i = 0; i < 105; i++) {
+for (let i = 0; i < 1; i++) {
   // Create the visual obstacle mesh in Three.js
   const obstacle = new THREE.Mesh(obstacleGeometry, obstacleMaterial);
-  obstacle.position.set((Math.random() - 0.5) * 800, 1, (Math.random() - 0.5) * 800);
+  obstacle.position.set((Math.random() - 0.5) * 100, 1, (Math.random() - 0.5) * 100);
   obstacle.castShadow = true; // Cast shadows
   obstacle.receiveShadow = true; // Receive shadows
   scene.add(obstacle);
@@ -220,7 +247,7 @@ window.addEventListener('mousedown', (event) => {
 });
 
 function shootSphere() {
-  const sphereRadius = 0.1;
+  const sphereRadius = 1.1;
   const sphereMass = 0.1;
 
   const sphereGeometry = new THREE.SphereGeometry(sphereRadius, 8, 8);
