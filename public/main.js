@@ -7,7 +7,12 @@ const socket = io();
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(140, 255, 115);
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+const renderer = new THREE.WebGLRenderer( { antialias: true } );
+			renderer.setPixelRatio( window.devicePixelRatio );
+			renderer.setSize( window.innerWidth, window.innerHeight );
+			renderer.shadowMap.enabled = true;
+			renderer.shadowMap.type = THREE.VSMShadowMap;
+			renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
@@ -37,7 +42,46 @@ document.body.appendChild(loadingMessage);
 const geometry = new THREE.BoxGeometry();
 const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
 const playerMesh = new THREE.Mesh(geometry, material);
+scene.background = new THREE.Color(0x87CEEB);
 scene.add(playerMesh);
+
+// LIGHTS
+
+const hemiLight = new THREE.HemisphereLight( 0xffffff, 0xffffff, 2 );
+hemiLight.color.setHSL( 0.6, 1, 0.6 );
+hemiLight.groundColor.setHSL( 0.0001, 1, 0.75 );
+hemiLight.position.set( 0, 50, 0 );
+scene.add( hemiLight );
+
+const hemiLightHelper = new THREE.HemisphereLightHelper( hemiLight, 0 );
+scene.add( hemiLightHelper );
+
+//
+
+const dirLight = new THREE.DirectionalLight( 0xffffff, 3 );
+dirLight.color.setHSL( 0.1, 1, 0.95 );
+dirLight.position.set( - 1, 1.75, 1 );
+dirLight.position.multiplyScalar( 30 );
+scene.add( dirLight );
+
+dirLight.castShadow = true;
+
+dirLight.shadow.mapSize.width = 2048;
+dirLight.shadow.mapSize.height = 2048;
+
+const d = 50;
+
+dirLight.shadow.camera.left = - d;
+dirLight.shadow.camera.right = d;
+dirLight.shadow.camera.top = d;
+dirLight.shadow.camera.bottom = - d;
+
+dirLight.shadow.camera.far = 3500;
+dirLight.shadow.bias = - 0.0001;
+
+const dirLightHelper = new THREE.DirectionalLightHelper( dirLight, 10 );
+scene.add( dirLightHelper );
+
 
 // Store other players
 let otherPlayers = {};
@@ -45,13 +89,18 @@ let otherPlayers = {};
 const spawnHeight = 2; // Adjust as needed to set initial spawn height above ground
 camera.position.set(0, spawnHeight, 0); // Place the camera at a height above ground
 playerMesh.position.set(0, spawnHeight, 0); // Place the player mesh at the same height
+playerMesh.castShadow = true; // Cast shadows
+playerMesh.receiveShadow = true; // Receive shadows
 playerMesh.add(camera); // Attach camera to player mesh
 
 
 // Ground plane
-const groundGeometry = new THREE.PlaneGeometry(100, 100);
+const groundGeometry = new THREE.PlaneGeometry(1000, 1000);
 const groundMaterial = new THREE.MeshBasicMaterial({ color: 0x228B22, side: THREE.DoubleSide });
+
 const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+ground.receiveShadow = true; // Receive shadows from lights
+
 ground.rotation.x = -Math.PI / 2;
 scene.add(ground);
 
@@ -63,10 +112,12 @@ const obstacleBodies = []; // Store the obstacle bodies for physics
 const obstacleHealth = [];
 const healthBars = [];
 
-for (let i = 0; i < 15; i++) {
+for (let i = 0; i < 105; i++) {
   // Create the visual obstacle mesh in Three.js
   const obstacle = new THREE.Mesh(obstacleGeometry, obstacleMaterial);
-  obstacle.position.set((Math.random() - 0.5) * 80, 1, (Math.random() - 0.5) * 80);
+  obstacle.position.set((Math.random() - 0.5) * 800, 1, (Math.random() - 0.5) * 800);
+  obstacle.castShadow = true; // Cast shadows
+  obstacle.receiveShadow = true; // Receive shadows
   scene.add(obstacle);
   obstacles.push(obstacle);
 
@@ -94,7 +145,7 @@ for (let i = 0; i < 15; i++) {
 }
 
 // Movement, control, and role variables
-const playerSpeed = 0.1;
+const playerSpeed = 1;
 let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
 let yaw = 0, pitch = 0;
 let isJumping = false;
@@ -201,6 +252,16 @@ function shootSphere() {
   sphereBody.gravityScale = 0; // Custom property to control gravity activation later
   world.addBody(sphereBody);
 
+// Initialize the Web Audio API context
+const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+// Load the "bonk" sound effect
+let vanishSoundBuffer;
+fetch('assets/Bonk Sound Effect.mp3')
+  .then(response => response.arrayBuffer())
+  .then(data => audioContext.decodeAudioData(data))
+  .then(buffer => vanishSoundBuffer = buffer)
+  .catch(e => console.error('Error loading sound:', e));
   // Collision detection on projectile
   sphereBody.addEventListener('collide', (event) => {
     const collidedBody = event.body;
@@ -208,10 +269,10 @@ function shootSphere() {
     if (obstacleBodies.includes(collidedBody) || collidedBody === groundBody) {
       // Activate gravity by setting the gravity scale to 1
       sphereBody.gravityScale = 1;
-      
+
       // Reapply gravity to the body after collision
       sphereBody.force.set(0, -world.gravity.y * sphereBody.mass, 0);
-      
+
       // Optional: Handle collision with obstacle to reduce its health
       if (obstacleBodies.includes(collidedBody)) {
         const obstacleIndex = obstacleBodies.indexOf(collidedBody);
@@ -223,8 +284,28 @@ function shootSphere() {
           healthBars[obstacleIndex].material.color.setHex(
             healthPercentage > 0.5 ? 0x00ff00 : (healthPercentage > 0.25 ? 0xffff00 : 0xff0000)
           );
-
           if (obstacleHealth[obstacleIndex] <= 0) {
+            // Calculate distance between player and obstacle
+            const playerPosition = playerMesh.position;
+            const obstaclePosition = obstacles[obstacleIndex].position;
+            const distance = playerPosition.distanceTo(obstaclePosition);
+        
+            // Create a sound source and gain node for controlling volume
+            const source = audioContext.createBufferSource();
+            source.buffer = vanishSoundBuffer;
+        
+            const gainNode = audioContext.createGain();
+            source.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+        
+            // Set volume based on distance (farther distance = quieter)
+            const maxDistance = 50; // Adjust this value based on the size of your scene
+            gainNode.gain.value = Math.max(0, 1 - distance / maxDistance);
+        
+            // Play the sound
+            source.start();
+        
+            // Remove the obstacle and other related entities
             scene.remove(obstacles[obstacleIndex]);
             scene.remove(healthBars[obstacleIndex]);
             world.removeBody(obstacleBodies[obstacleIndex]);
@@ -232,25 +313,11 @@ function shootSphere() {
             obstacleBodies.splice(obstacleIndex, 1);
             obstacleHealth.splice(obstacleIndex, 1);
             healthBars.splice(obstacleIndex, 1);
-
+        
             // Optional: Create particle effect at the collision point
             createParticleEffect(sphereMesh.position);
-          }
         }
-        if (obstacleBodies.includes(collidedBody) || collidedBody === groundBody) {
-      // Enable gravity by setting gravity scale to 1
-      sphereBody.gravityScale = 1;
-
-      // Reapply gravity to the body after collision
-      sphereBody.force.set(0, -world.gravity.y * sphereBody.mass, 0);
-
-      // Optional: Remove sphere upon collision
-      scene.remove(sphereMesh);
-      world.removeBody(sphereBody);
-      projectiles = projectiles.filter(p => p.body !== sphereBody);
-    }
-
-
+      }
       }
 
       // Remove the projectile upon collision
@@ -317,7 +384,7 @@ function updateProjectiles() {
     projectile.mesh.position.copy(projectile.body.position);
     projectile.mesh.quaternion.copy(projectile.body.quaternion);
 
-    if (projectile.mesh.position.length() > 50) {
+    if (projectile.mesh.position.length() > 1000) {
       scene.remove(projectile.mesh);
       world.removeBody(projectile.body);
       projectiles.splice(i, 1);
@@ -325,24 +392,6 @@ function updateProjectiles() {
   }
 }
 
-const ambientLight = new THREE.AmbientLight(0x404040, 2);
-scene.add(ambientLight);
-
-const hemisphereLight = new THREE.HemisphereLight(0x87CEEB, 0x555555, 0.5);
-scene.add(hemisphereLight);
-
-const sunlight = new THREE.DirectionalLight(0xffffff, 1.5);
-sunlight.position.set(10, 50, 10);
-sunlight.castShadow = true;
-scene.add(sunlight);
-
-const spotlight = new THREE.SpotLight(0xffffff, 1);
-spotlight.position.set(0, 15, 0);
-spotlight.castShadow = true;
-scene.add(spotlight);
-
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
 function animate() {
   requestAnimationFrame(animate);
