@@ -34,7 +34,7 @@ loadingMessage.style.position = 'absolute';
 loadingMessage.style.top = '50%';
 loadingMessage.style.left = '50%';
 loadingMessage.style.transform = 'translate(-50%, -50%)';
-loadingMessage.style.color = 'white';
+loadingMessage.style.color = 'black';
 loadingMessage.style.fontSize = '24px';
 loadingMessage.innerText = 'Waiting for other players...';
 document.body.appendChild(loadingMessage);
@@ -143,7 +143,7 @@ function keepPlayerWithinBounds() {
   const xMax = 175.9;  // Boundary for +x
 
   const zMin = -178.8
-  const zMax = 138.6
+  const zMax = 179
   // Apply the boundaries
   pos.x = THREE.MathUtils.clamp(pos.x, xMin, xMax);
   pos.y = THREE.MathUtils.clamp(pos.y, 0, boundary.y);
