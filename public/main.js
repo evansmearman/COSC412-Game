@@ -131,40 +131,74 @@ playerMesh.add(camera); // Attach camera to player mesh
 // ground.rotation.x = -Math.PI / 2;
 // scene.add(ground);
 
+// Define boundary dimensions
+const boundary = { x: 124, y: 128.5, z: 138.6 };
 
-// Create a barrier around the model
-const barrierSize = 110; // Define the approximate boundary size around your model
-const barrierHeight = 110; // Define the height of the walls
-
-// Create four barriers (left, right, front, back)
-
-const wallMateria2 = new CANNON.Material();
-const barriers = [
-  { position: new CANNON.Vec3(-barrierSize, barrierHeight / 2, 0), rotation: new CANNON.Vec3(0, Math.PI / 2, 0) }, // Left wall
-  { position: new CANNON.Vec3(barrierSize, barrierHeight / 2, 0), rotation: new CANNON.Vec3(0, -Math.PI / 2, 0) }, // Right wall
-  { position: new CANNON.Vec3(0, barrierHeight / 2, -barrierSize), rotation: new CANNON.Vec3(0, 0, 0) }, // Back wall
-  { position: new CANNON.Vec3(0, barrierHeight / 2, barrierSize), rotation: new CANNON.Vec3(0, Math.PI, 0) } // Front wall
-];
-
-barriers.forEach((barrier) => {
-  const wallShape = new CANNON.Box(new CANNON.Vec3(0.5, barrierHeight, barrierSize));
-  const wallBody = new CANNON.Body({
-    mass: 0, // Static wall
-    position: barrier.position,
-    material: wallMateria2
-  });
-  wallBody.addShape(wallShape);
-  wallBody.quaternion.setFromEuler(barrier.rotation.x, barrier.rotation.y, barrier.rotation.z);
-  world.addBody(wallBody);
+// Function to restrict player within bounds
+function keepPlayerWithinBounds() {
+  const pos = playerMesh.position;
   
-  // Optional: Add a Three.js invisible wall to visualize the boundary
-  const wallGeometry = new THREE.BoxGeometry(1, barrierHeight * 2, barrierSize * 2);
-  const wallMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000, transparent: true, opacity: 0.1 });
-  const wallMesh = new THREE.Mesh(wallGeometry, wallMaterial);
-  wallMesh.position.copy(barrier.position);
-  wallMesh.rotation.set(barrier.rotation.x, barrier.rotation.y, barrier.rotation.z);
-  scene.add(wallMesh);
-});
+  // Define different boundaries for -x and +x
+  const xMin = -150; // Boundary for -x
+  const xMax = 175.9;  // Boundary for +x
+
+  const zMin = -178.8
+  const zMax = 138.6
+  // Apply the boundaries
+  pos.x = THREE.MathUtils.clamp(pos.x, xMin, xMax);
+  pos.y = THREE.MathUtils.clamp(pos.y, 0, boundary.y);
+  pos.z = THREE.MathUtils.clamp(pos.z, zMin, zMax);
+
+}
+function createVisibleBoundaries() {
+  const boundarySize = boundary.x; // Match barrier size
+  const boundaryHeight = boundary.y; // Match barrier height
+  const boundaryZ = boundary.z
+
+  // Material for the boundary lines
+  const boundaryMaterial = new THREE.LineBasicMaterial({ color: 0xff0000 });
+
+  // Create a box geometry for the boundary
+  const boxGeometry = new THREE.BoxGeometry(boundarySize * 2, boundaryHeight * 2, boundaryZ * 2);
+  const edges = new THREE.EdgesGeometry(boxGeometry);
+
+  // Create line segments for the boundary
+  const boundaryMesh = new THREE.LineSegments(edges, boundaryMaterial);
+  boundaryMesh.position.set(0, boundaryHeight / 2, 0); // Center the boundary box
+  scene.add(boundaryMesh);
+
+  // Optional: Add semi-transparent walls for better visibility
+  const wallMaterial = new THREE.MeshBasicMaterial({
+    color: 0xff0000,
+    transparent: true,
+    opacity: 0.1,
+    side: THREE.DoubleSide,
+  });
+
+  const walls = [
+    { size: [boundarySize * 2, boundaryHeight * 2], position: [0, boundaryHeight / 2, -boundarySize] }, // Back
+    { size: [boundarySize * 2, boundaryHeight * 2], position: [0, boundaryHeight / 2, boundarySize] }, // Front
+    { size: [boundaryHeight * 2, boundaryHeight * 2], position: [-boundarySize, boundaryHeight / 2, 0], rotation: [0, Math.PI / 2, 0] }, // Left
+    { size: [boundaryHeight * 2, boundaryHeight * 2], position: [boundarySize, boundaryHeight / 2, 0], rotation: [0, -Math.PI / 2, 0] }, // Right
+  ];
+
+  walls.forEach(({ size, position, rotation }) => {
+    const [width, height] = size;
+    const wallGeometry = new THREE.PlaneGeometry(width, height);
+    const wallMesh = new THREE.Mesh(wallGeometry, wallMaterial);
+
+    wallMesh.position.set(...position);
+    if (rotation) {
+      wallMesh.rotation.set(...rotation);
+    }
+
+    scene.add(wallMesh);
+  });
+}
+
+// Call the function to add visible boundaries
+// createVisibleBoundaries();
+
 
 // Obstacle setup with physics for Cannon.js
 const obstacleGeometry = new THREE.BoxGeometry(2, 2, 2);
@@ -174,7 +208,7 @@ const obstacleBodies = []; // Store the obstacle bodies for physics
 const obstacleHealth = [];
 const healthBars = [];
 
-for (let i = 0; i < 1; i++) {
+for (let i = 0; i < 100; i++) {
   // Create the visual obstacle mesh in Three.js
   const obstacle = new THREE.Mesh(obstacleGeometry, obstacleMaterial);
   obstacle.position.set((Math.random() - 0.5) * 100, 1, (Math.random() - 0.5) * 100);
@@ -217,7 +251,7 @@ const jumpHeight = 0.5;
 const groundLevel = 1;
 let isFlying = false;
 let flyUp = false, flyDown = false;
-const flyingSpeed = 0.1;
+const flyingSpeed = 1;
 
 // Store projectiles
 let projectiles = [];
@@ -295,7 +329,7 @@ function shootSphere() {
   const forwardDirection = new THREE.Vector3();
   camera.getWorldDirection(forwardDirection);
   sphereMesh.position.copy(startPosition.add(forwardDirection.multiplyScalar(1.5)));
-
+  console.log(playerMesh.position)
   // Cannon.js body for the sphere
   const sphereShape = new CANNON.Sphere(sphereRadius);
   const sphereBody = new CANNON.Body({ mass: sphereMass });
@@ -460,7 +494,6 @@ function animate() {
   world.step(1 / 60);
 
   updateProjectiles();
-
   let direction = new THREE.Vector3();
   if (moveForward) direction.z -= playerSpeed;
   if (moveBackward) direction.z += playerSpeed;
@@ -468,7 +501,8 @@ function animate() {
   if (moveRight) direction.x += playerSpeed;
   direction.applyQuaternion(playerMesh.quaternion);
   playerMesh.position.add(direction);
-
+  
+  keepPlayerWithinBounds();
   if (isFlying) {
     if (flyUp) playerMesh.position.y += flyingSpeed;
     if (flyDown) playerMesh.position.y -= flyingSpeed;
