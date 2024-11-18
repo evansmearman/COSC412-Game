@@ -17,5 +17,8 @@
     "express": "^4.19.2",
     "socket.io": "^4.7.5",
     "three": "^0.168.0"
+  },
+  "devDependencies": {
+    "@types/cannon": "^0.1.13"
   }
 }
