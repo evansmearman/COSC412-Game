@@ -13,10 +13,10 @@
   "dependencies": {
     "@react-three/fiber": "^8.17.7",
     "@types/three": "^0.168.0",
-    "bootstrap": "^5.3.3",
     "cannon": "^0.6.2",
     "express": "^4.19.2",
     "socket.io": "^4.7.5",
+    "tailwind": "^4.0.0",
     "three": "^0.168.0"
   },
   "devDependencies": {
