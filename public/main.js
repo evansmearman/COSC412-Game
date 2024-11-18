@@ -40,35 +40,39 @@ loadingMessage.innerText = 'Waiting for other players...';
 document.body.appendChild(loadingMessage);
 
 
-// Create chat container
-const chatContainer = document.createElement('div');
-chatContainer.style.position = 'absolute';
-chatContainer.style.bottom = '10px';
-chatContainer.style.left = '10px';
-chatContainer.style.width = '300px';
-chatContainer.style.height = '200px';
-chatContainer.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
-chatContainer.style.border = '1px solid white';
-chatContainer.style.overflowY = 'scroll';
-chatContainer.style.padding = '10px';
-chatContainer.style.color = 'white';
-chatContainer.style.fontSize = '14px';
-chatContainer.style.display = 'flex';
-chatContainer.style.flexDirection = 'column';
-document.body.appendChild(chatContainer);
+// // Create chat container
+// const chatContainer = document.createElement('div');
+// chatContainer.style.position = 'absolute';
+// chatContainer.style.bottom = '10px';
+// chatContainer.style.left = '10px';
+// chatContainer.style.width = '300px';
+// chatContainer.style.height = '200px';
+// chatContainer.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+// chatContainer.style.border = '1px solid white';
+// chatContainer.style.overflowY = 'scroll';
+// chatContainer.style.padding = '10px';
+// chatContainer.style.color = 'white';
+// chatContainer.style.fontSize = '14px';
+// chatContainer.style.display = 'flex';
+// chatContainer.style.flexDirection = 'column';
+// chatContainer.style.opacity = '0.3'; // Initially transparent
+// chatContainer.style.transition = 'opacity 0.3s ease'; // Smooth transition for opacity
+// document.body.appendChild(chatContainer);
 
-// Create chat input box
-const chatInput = document.createElement('input');
-chatInput.style.position = 'absolute';
-chatInput.style.bottom = '10px';
-chatInput.style.left = '10px';
-chatInput.style.width = '300px';
-chatInput.style.padding = '5px';
-chatInput.style.backgroundColor = 'white';
-chatInput.style.color = 'black';
-chatInput.style.border = '1px solid black';
-chatInput.placeholder = 'Type your message here...';
-document.body.appendChild(chatInput);
+// // Create chat input box
+// const chatInput = document.createElement('input');
+// chatInput.style.position = 'absolute';
+// chatInput.style.bottom = '10px';
+// chatInput.style.left = '10px';
+// chatInput.style.width = '300px';
+// chatInput.style.padding = '5px';
+// chatInput.style.backgroundColor = 'white';
+// chatInput.style.color = 'black';
+// chatInput.style.border = '1px solid black';
+// chatInput.style.opacity = '0.3'; // Initially transparent
+// chatInput.style.transition = 'opacity 0.3s ease'; // Smooth transition for opacity
+// chatInput.placeholder = 'Press Enter to chat...';
+// document.body.appendChild(chatInput);
 
 
 // Geometry and materials for player
@@ -100,7 +104,40 @@ loader.load(
   }
 );
 
+// Load and replace the cube with the Fly model
 
+
+loader.load(
+  'assets/ImageToStl.com_char_playerfly.glb', // Path to your Fly model
+  (gltf) => {
+    const flyPlayer = gltf.scene;
+
+    // Enable shadows for the model
+    flyPlayer.traverse((child) => {
+      if (child.isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+
+    // Scale, position, and add to scene
+    flyPlayer.scale.set(1, 1, 1); // Adjust scale if necessary
+    flyPlayer.position.set(0, 2, 0); // Initial spawn position
+    scene.add(flyPlayer);
+
+    // Attach camera to the player model
+    flyPlayer.add(camera);
+
+    // Update the reference to the player mesh
+    playerMesh = flyPlayer;
+  },
+  (xhr) => {
+    console.log(`${(xhr.loaded / xhr.total) * 100}% loaded`);
+  },
+  (error) => {
+    console.error('An error occurred while loading the Fly model:', error);
+  }
+);
 
 
 
@@ -240,7 +277,7 @@ const obstacleBodies = []; // Store the obstacle bodies for physics
 const obstacleHealth = [];
 const healthBars = [];
 
-for (let i = 0; i < 100; i++) {
+for (let i = 0; i < 0; i++) {
   // Create the visual obstacle mesh in Three.js
   const obstacle = new THREE.Mesh(obstacleGeometry, obstacleMaterial);
   obstacle.position.set((Math.random() - 0.5) * 100, 1, (Math.random() - 0.5) * 100);
@@ -618,13 +655,35 @@ function addNewPlayer(id, position) {
   otherPlayers[id] = otherPlayerMesh;
 }
 
-// Listen for 'Enter' key to send chat message
+// Make chat visible when input is focused
+chatInput.addEventListener('focus', () => {
+  chatContainer.style.opacity = '1';
+  chatInput.style.opacity = '1';
+});
+
+// Make chat transparent when input loses focus
+chatInput.addEventListener('blur', () => {
+  if (chatInput.value.trim() === '') {
+    chatContainer.style.opacity = '0.3';
+    chatInput.style.opacity = '0.3';
+  }
+});
+
+// Listen for 'Enter' to focus the input field
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter' && document.activeElement !== chatInput) {
+    chatInput.focus();
+  }
+});
+
+// Send chat message on 'Enter' and unfocus input field
 chatInput.addEventListener('keydown', (event) => {
   if (event.key === 'Enter' && chatInput.value.trim() !== '') {
     const message = chatInput.value;
     socket.emit('chatMessage', { id: socket.id, message }); // Send the message to the server
     addChatMessage('Me', message); // Display your own message
     chatInput.value = ''; // Clear the input box
+    chatInput.blur(); // Unfocus the input after sending
   }
 });
 
