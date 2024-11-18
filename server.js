@@ -63,6 +63,11 @@ io.on('connection', (socket) => {
             velocity: data.velocity,
         });
     });
+
+    socket.on('chatMessage', (data) => {
+        // Broadcast the message to all players
+        socket.broadcast.emit('chatMessage', data);
+      });
     
 });
 

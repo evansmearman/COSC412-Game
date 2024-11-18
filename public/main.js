@@ -39,6 +39,38 @@ loadingMessage.style.fontSize = '24px';
 loadingMessage.innerText = 'Waiting for other players...';
 document.body.appendChild(loadingMessage);
 
+
+// Create chat container
+const chatContainer = document.createElement('div');
+chatContainer.style.position = 'absolute';
+chatContainer.style.bottom = '10px';
+chatContainer.style.left = '10px';
+chatContainer.style.width = '300px';
+chatContainer.style.height = '200px';
+chatContainer.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+chatContainer.style.border = '1px solid white';
+chatContainer.style.overflowY = 'scroll';
+chatContainer.style.padding = '10px';
+chatContainer.style.color = 'white';
+chatContainer.style.fontSize = '14px';
+chatContainer.style.display = 'flex';
+chatContainer.style.flexDirection = 'column';
+document.body.appendChild(chatContainer);
+
+// Create chat input box
+const chatInput = document.createElement('input');
+chatInput.style.position = 'absolute';
+chatInput.style.bottom = '10px';
+chatInput.style.left = '10px';
+chatInput.style.width = '300px';
+chatInput.style.padding = '5px';
+chatInput.style.backgroundColor = 'white';
+chatInput.style.color = 'black';
+chatInput.style.border = '1px solid black';
+chatInput.placeholder = 'Type your message here...';
+document.body.appendChild(chatInput);
+
+
 // Geometry and materials for player
 const geometry = new THREE.BoxGeometry();
 const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
@@ -585,3 +617,27 @@ function addNewPlayer(id, position) {
   scene.add(otherPlayerMesh);
   otherPlayers[id] = otherPlayerMesh;
 }
+
+// Listen for 'Enter' key to send chat message
+chatInput.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter' && chatInput.value.trim() !== '') {
+    const message = chatInput.value;
+    socket.emit('chatMessage', { id: socket.id, message }); // Send the message to the server
+    addChatMessage('Me', message); // Display your own message
+    chatInput.value = ''; // Clear the input box
+  }
+});
+
+// Function to add a message to the chat
+function addChatMessage(sender, message) {
+  const messageElement = document.createElement('div');
+  messageElement.textContent = `${sender}: ${message}`;
+  chatContainer.appendChild(messageElement);
+  chatContainer.scrollTop = chatContainer.scrollHeight; // Auto-scroll to the bottom
+}
+
+// Listen for incoming chat messages
+socket.on('chatMessage', (data) => {
+  addChatMessage(`Player ${data.id}`, data.message);
+});
+
