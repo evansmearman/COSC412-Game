@@ -1,82 +1,83 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Insect Invasion</title>
-    <link rel="stylesheet" href="styles.css"> <!-- Link to your CSS file -->
-    <style>
-      body {
-      margin: 0;
-      overflow: hidden;
-      font-family: Arial, sans-serif;
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Insect Invasion</title>
+  <script src="https://cdn.tailwindcss.com"></script> <!-- Tailwind CSS -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            background: '#1a202c',
+            button: '#4ade80',
+            buttonHover: '#22c55e',
+          },
+        },
+      },
+    };
+  </script>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.module.js",
+        "three/examples/jsm/controls/PointerLockControls": "https://cdn.jsdelivr.net/npm/three@0.152.2/examples/jsm/controls/PointerLockControls.js",
+        "three/examples/jsm/loaders/GLTFLoader": "https://cdn.jsdelivr.net/npm/three@0.152.2/examples/jsm/loaders/GLTFLoader.js",
+        "cannon-es": "https://cdn.jsdelivr.net/npm/cannon-es@0.18.0/dist/cannon-es.js",
+        "socket.io-client": "https://cdn.jsdelivr.net/npm/socket.io-client@4.5.1/dist/socket.io.esm.min.js"
       }
-      #titleScreen {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: #222;
-      color: white;
     }
-    #lobbyScreen {
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: #333;
-      color: white;
-    }
-    </style>
-    <!-- Import map for ES module imports -->
-    <script type="importmap">
-      {
-        "imports": {
-          "three": "https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.module.js",
-          "three/examples/jsm/controls/PointerLockControls": "https://cdn.jsdelivr.net/npm/three@0.152.2/examples/jsm/controls/PointerLockControls.js",
-          "three/examples/jsm/loaders/GLTFLoader": "https://cdn.jsdelivr.net/npm/three@0.152.2/examples/jsm/loaders/GLTFLoader.js",
-          "cannon-es": "https://cdn.jsdelivr.net/npm/cannon-es@0.18.0/dist/cannon-es.js",
-          "socket.io-client": "https://cdn.jsdelivr.net/npm/socket.io-client@4.5.1/dist/socket.io.esm.min.js"
-        }
-      }
-      </script>
-      
-      
+  </script>
 </head>
-<body>
+<body class="bg-background text-white font-sans">
   
-    <!-- Title Screen -->
-    <div id="titleScreen">
-      <h1>Insect Invasion</h1>
-      <input id="playerNameInput" type="text" placeholder="Enter your name" />
-      <button id="createLobbyButton">Create Lobby</button>
-      <button id="joinLobbyButton">Join Lobby</button>
-      <input id="lobbyCodeInput" type="text" placeholder="Enter Lobby Code" />
+  <!-- Title Screen -->
+  <div id="titleScreen" class="flex flex-col items-center justify-center h-screen">
+    <h1 class="text-4xl font-bold mb-6">Insect Invasion</h1>
+    <input 
+      id="playerNameInput" 
+      type="text" 
+      placeholder="Enter your name"
+      class="mb-4 px-4 py-2 text-black rounded-md focus:ring-2 focus:ring-button outline-none"
+    />
+    <div class="space-x-4">
+      <button 
+        id="createLobbyButton" 
+        class="px-6 py-2 rounded-md bg-button hover:bg-buttonHover text-black font-medium transition"
+      >
+        Create Lobby
+      </button>
+      <button 
+        id="joinLobbyButton" 
+        class="px-6 py-2 rounded-md bg-button hover:bg-buttonHover text-black font-medium transition"
+      >
+        Join Lobby
+      </button>
     </div>
-  
-    <!-- Lobby Screen -->
-    <div id="lobbyScreen">
-      <h2>Lobby Code: <span id="lobbyCodeDisplay"></span></h2>
-      <ul id="playerList"></ul>
-      <button id="startGameButton" style="display: none;">Start Game</button>
-    </div>
-  
-    <!-- Game Scripts -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.min.js"></script>
-    <script type="module" src="main.js"></script>
-  
-    <!-- Main JavaScript file using module imports -->
-    <script type="module" src="main.js"></script>
-    
+    <input 
+      id="lobbyCodeInput" 
+      type="text" 
+      placeholder="Enter Lobby Code"
+      class="mt-4 px-4 py-2 text-black rounded-md focus:ring-2 focus:ring-button outline-none"
+    />
+  </div>
+
+  <!-- Lobby Screen -->
+  <div id="lobbyScreen" class="hidden flex flex-col items-center justify-center h-screen bg-gray-800">
+    <h2 class="text-2xl font-semibold mb-4">Lobby Code: <span id="lobbyCodeDisplay" class="font-bold text-green-400"></span></h2>
+    <ul id="playerList" class="mb-6 text-lg list-disc list-inside space-y-2"></ul>
+    <button 
+      id="startGameButton" 
+      class="hidden px-6 py-2 rounded-md bg-button hover:bg-buttonHover text-black font-medium transition"
+    >
+      Start Game
+    </button>
+  </div>
+
+  <!-- Game Scripts -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.min.js"></script>
+  <script type="module" src="main.js"></script>
+
 </body>
 </html>
