@@ -75,6 +75,8 @@ chatInput.placeholder = 'Press Enter to chat...';
 document.body.appendChild(chatInput);
 
 
+
+
 // Geometry and materials for player
 const geometry = new THREE.BoxGeometry();
 const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
