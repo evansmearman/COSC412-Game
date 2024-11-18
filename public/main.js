@@ -107,38 +107,6 @@ loader.load(
 // Load and replace the cube with the Fly model
 
 
-loader.load(
-  'assets/ImageToStl.com_char_playerfly.glb', // Path to your Fly model
-  (gltf) => {
-    const flyPlayer = gltf.scene;
-
-    // Enable shadows for the model
-    flyPlayer.traverse((child) => {
-      if (child.isMesh) {
-        child.castShadow = true;
-        child.receiveShadow = true;
-      }
-    });
-
-    // Scale, position, and add to scene
-    flyPlayer.scale.set(1, 1, 1); // Adjust scale if necessary
-    flyPlayer.position.set(0, 2, 0); // Initial spawn position
-    scene.add(flyPlayer);
-
-    // Attach camera to the player model
-    flyPlayer.add(camera);
-
-    // Update the reference to the player mesh
-    playerMesh = flyPlayer;
-  },
-  (xhr) => {
-    console.log(`${(xhr.loaded / xhr.total) * 100}% loaded`);
-  },
-  (error) => {
-    console.error('An error occurred while loading the Fly model:', error);
-  }
-);
-
 
 
 // LIGHTS
