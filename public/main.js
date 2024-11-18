@@ -40,39 +40,39 @@ loadingMessage.innerText = 'Waiting for other players...';
 document.body.appendChild(loadingMessage);
 
 
-// // Create chat container
-// const chatContainer = document.createElement('div');
-// chatContainer.style.position = 'absolute';
-// chatContainer.style.bottom = '10px';
-// chatContainer.style.left = '10px';
-// chatContainer.style.width = '300px';
-// chatContainer.style.height = '200px';
-// chatContainer.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
-// chatContainer.style.border = '1px solid white';
-// chatContainer.style.overflowY = 'scroll';
-// chatContainer.style.padding = '10px';
-// chatContainer.style.color = 'white';
-// chatContainer.style.fontSize = '14px';
-// chatContainer.style.display = 'flex';
-// chatContainer.style.flexDirection = 'column';
-// chatContainer.style.opacity = '0.3'; // Initially transparent
-// chatContainer.style.transition = 'opacity 0.3s ease'; // Smooth transition for opacity
-// document.body.appendChild(chatContainer);
+// Create chat container
+const chatContainer = document.createElement('div');
+chatContainer.style.position = 'absolute';
+chatContainer.style.bottom = '10px';
+chatContainer.style.left = '10px';
+chatContainer.style.width = '300px';
+chatContainer.style.height = '200px';
+chatContainer.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+chatContainer.style.border = '1px solid white';
+chatContainer.style.overflowY = 'scroll';
+chatContainer.style.padding = '10px';
+chatContainer.style.color = 'white';
+chatContainer.style.fontSize = '14px';
+chatContainer.style.display = 'flex';
+chatContainer.style.flexDirection = 'column';
+chatContainer.style.opacity = '0.3'; // Initially transparent
+chatContainer.style.transition = 'opacity 0.3s ease'; // Smooth transition for opacity
+document.body.appendChild(chatContainer);
 
-// // Create chat input box
-// const chatInput = document.createElement('input');
-// chatInput.style.position = 'absolute';
-// chatInput.style.bottom = '10px';
-// chatInput.style.left = '10px';
-// chatInput.style.width = '300px';
-// chatInput.style.padding = '5px';
-// chatInput.style.backgroundColor = 'white';
-// chatInput.style.color = 'black';
-// chatInput.style.border = '1px solid black';
-// chatInput.style.opacity = '0.3'; // Initially transparent
-// chatInput.style.transition = 'opacity 0.3s ease'; // Smooth transition for opacity
-// chatInput.placeholder = 'Press Enter to chat...';
-// document.body.appendChild(chatInput);
+// Create chat input box
+const chatInput = document.createElement('input');
+chatInput.style.position = 'absolute';
+chatInput.style.bottom = '10px';
+chatInput.style.left = '10px';
+chatInput.style.width = '300px';
+chatInput.style.padding = '5px';
+chatInput.style.backgroundColor = 'white';
+chatInput.style.color = 'black';
+chatInput.style.border = '1px solid black';
+chatInput.style.opacity = '0.3'; // Initially transparent
+chatInput.style.transition = 'opacity 0.3s ease'; // Smooth transition for opacity
+chatInput.placeholder = 'Press Enter to chat...';
+document.body.appendChild(chatInput);
 
 
 // Geometry and materials for player
@@ -150,7 +150,7 @@ scene.add( dirLightHelper );
 // Store other players
 let otherPlayers = {};
 
-const spawnHeight = 2; // Adjust as needed to set initial spawn height above ground
+const spawnHeight = 3; // Adjust as needed to set initial spawn height above ground
 camera.position.set(0, spawnHeight, 0); // Place the camera at a height above ground
 playerMesh.position.set(0, spawnHeight, 0); // Place the player mesh at the same height
 playerMesh.castShadow = true; // Cast shadows
@@ -158,15 +158,6 @@ playerMesh.receiveShadow = true; // Receive shadows
 playerMesh.add(camera); // Attach camera to player mesh
 
 
-// Ground plane
-// const groundGeometry = new THREE.PlaneGeometry(1000, 1000);
-// const groundMaterial = new THREE.MeshBasicMaterial({ color: 0x228B22, side: THREE.DoubleSide });
-
-// const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-// ground.receiveShadow = true; // Receive shadows from lights
-
-// ground.rotation.x = -Math.PI / 2;
-// scene.add(ground);
 
 // Define boundary dimensions
 const boundary = { x: 124, y: 128.5, z: 138.6 };
@@ -366,7 +357,7 @@ function shootSphere() {
   const forwardDirection = new THREE.Vector3();
   camera.getWorldDirection(forwardDirection);
   sphereMesh.position.copy(startPosition.add(forwardDirection.multiplyScalar(1.5)));
-  console.log(playerMesh.position)
+
   // Cannon.js body for the sphere
   const sphereShape = new CANNON.Sphere(sphereRadius);
   const sphereBody = new CANNON.Body({ mass: sphereMass });
@@ -385,16 +376,9 @@ function shootSphere() {
   sphereBody.gravityScale = 0; // Custom property to control gravity activation later
   world.addBody(sphereBody);
 
-// Initialize the Web Audio API context
-const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  // Initialize Web Audio API context (if needed)
+  const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
-// Load the "bonk" sound effect
-let vanishSoundBuffer;
-fetch('assets/Bonk Sound Effect.mp3')
-  .then(response => response.arrayBuffer())
-  .then(data => audioContext.decodeAudioData(data))
-  .then(buffer => vanishSoundBuffer = buffer)
-  .catch(e => console.error('Error loading sound:', e));
   // Collision detection on projectile
   sphereBody.addEventListener('collide', (event) => {
     const collidedBody = event.body;
@@ -403,10 +387,7 @@ fetch('assets/Bonk Sound Effect.mp3')
       // Activate gravity by setting the gravity scale to 1
       sphereBody.gravityScale = 1;
 
-      // Reapply gravity to the body after collision
-      sphereBody.force.set(0, -world.gravity.y * sphereBody.mass, 0);
-
-      // Optional: Handle collision with obstacle to reduce its health
+      // Handle obstacle collision
       if (obstacleBodies.includes(collidedBody)) {
         const obstacleIndex = obstacleBodies.indexOf(collidedBody);
         if (obstacleIndex > -1) {
@@ -417,28 +398,9 @@ fetch('assets/Bonk Sound Effect.mp3')
           healthBars[obstacleIndex].material.color.setHex(
             healthPercentage > 0.5 ? 0x00ff00 : (healthPercentage > 0.25 ? 0xffff00 : 0xff0000)
           );
+
           if (obstacleHealth[obstacleIndex] <= 0) {
-            // Calculate distance between player and obstacle
-            const playerPosition = playerMesh.position;
-            const obstaclePosition = obstacles[obstacleIndex].position;
-            const distance = playerPosition.distanceTo(obstaclePosition);
-        
-            // Create a sound source and gain node for controlling volume
-            const source = audioContext.createBufferSource();
-            source.buffer = vanishSoundBuffer;
-        
-            const gainNode = audioContext.createGain();
-            source.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-        
-            // Set volume based on distance (farther distance = quieter)
-            const maxDistance = 50; // Adjust this value based on the size of your scene
-            gainNode.gain.value = Math.max(0, 1 - distance / maxDistance);
-        
-            // Play the sound
-            source.start();
-        
-            // Remove the obstacle and other related entities
+            // Remove the obstacle and related entities
             scene.remove(obstacles[obstacleIndex]);
             scene.remove(healthBars[obstacleIndex]);
             world.removeBody(obstacleBodies[obstacleIndex]);
@@ -446,23 +408,33 @@ fetch('assets/Bonk Sound Effect.mp3')
             obstacleBodies.splice(obstacleIndex, 1);
             obstacleHealth.splice(obstacleIndex, 1);
             healthBars.splice(obstacleIndex, 1);
-        
-            // Optional: Create particle effect at the collision point
+
+            // Optional: Create particle effect
             createParticleEffect(sphereMesh.position);
+          }
         }
-      }
       }
 
       // Remove the projectile upon collision
       scene.remove(sphereMesh);
       world.removeBody(sphereBody);
-      projectiles = projectiles.filter(p => p.body !== sphereBody);
+      projectiles = projectiles.filter((p) => p.body !== sphereBody);
     }
   });
 
+  // Add the sphere to the scene and projectiles array
   scene.add(sphereMesh);
   projectiles.push({ mesh: sphereMesh, body: sphereBody });
   socket.emit('shoot', { position: sphereMesh.position, velocity: sphereBody.velocity });
+
+  // Remove the sphere after 10 seconds if it doesn't hit anything
+  setTimeout(() => {
+    if (projectiles.some((p) => p.body === sphereBody)) {
+      scene.remove(sphereMesh);
+      world.removeBody(sphereBody);
+      projectiles = projectiles.filter((p) => p.body !== sphereBody);
+    }
+  }, 10000); // 10 seconds
 }
 
 
@@ -514,9 +486,18 @@ function createParticleEffect(position) {
 function updateProjectiles() {
   for (let i = projectiles.length - 1; i >= 0; i--) {
     const projectile = projectiles[i];
+
+    // Skip undefined or incomplete projectiles
+    if (!projectile || !projectile.mesh || !projectile.body) {
+      projectiles.splice(i, 1); // Remove invalid projectiles
+      continue;
+    }
+
+    // Synchronize the Three.js mesh with the Cannon.js body
     projectile.mesh.position.copy(projectile.body.position);
     projectile.mesh.quaternion.copy(projectile.body.quaternion);
 
+    // Remove projectiles that go out of bounds
     if (projectile.mesh.position.length() > 1000) {
       scene.remove(projectile.mesh);
       world.removeBody(projectile.body);
@@ -524,7 +505,6 @@ function updateProjectiles() {
     }
   }
 }
-
 
 function animate() {
   requestAnimationFrame(animate);
@@ -567,14 +547,32 @@ function animate() {
 
 
 socket.on('shoot', (data) => {
-  const sphereGeometry = new THREE.SphereGeometry(0.1, 8, 8);
-  const sphereMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-  const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+  const sphereRadius = 1.1; // Ensure this matches the shootSphere function
+  const sphereMass = 0.1;
 
-  sphere.position.copy(data.position);
-  scene.add(sphere);
-  projectiles.push({ mesh: sphere, velocity: new THREE.Vector3(data.velocity.x, data.velocity.y, data.velocity.z) });
+  // Create the Three.js sphere mesh
+  const sphereGeometry = new THREE.SphereGeometry(sphereRadius, 8, 8);
+  const sphereMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+  const sphereMesh = new THREE.Mesh(sphereGeometry, sphereMaterial);
+  sphereMesh.position.copy(data.position);
+
+  // Create the Cannon.js sphere body
+  const sphereShape = new CANNON.Sphere(sphereRadius);
+  const sphereBody = new CANNON.Body({ mass: sphereMass });
+  sphereBody.addShape(sphereShape);
+  sphereBody.position.set(data.position.x, data.position.y, data.position.z);
+
+  // Apply velocity from the data
+  sphereBody.velocity.set(data.velocity.x, data.velocity.y, data.velocity.z);
+
+  // Add the sphere to the physics world and scene
+  world.addBody(sphereBody);
+  scene.add(sphereMesh);
+
+  // Add to the projectiles array for updates
+  projectiles.push({ mesh: sphereMesh, body: sphereBody });
 });
+
 
 socket.on('currentPlayers', (players) => {
   Object.keys(players).forEach((id) => {
@@ -624,11 +622,12 @@ function addNewPlayer(id, position) {
 }
 
 // Make chat visible when input is focused
-chatInput.addEventListener('focus', () => {
-  chatContainer.style.opacity = '1';
-  chatInput.style.opacity = '1';
-});
-
+if (chatInput && chatContainer) {
+  chatInput.addEventListener('focus', () => {
+    chatContainer.style.opacity = '1';
+    chatInput.style.opacity = '1';
+  });
+}
 // Make chat transparent when input loses focus
 chatInput.addEventListener('blur', () => {
   if (chatInput.value.trim() === '') {

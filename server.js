@@ -8,96 +8,88 @@ const io = new Server(server);
 
 app.use(express.static('public'));
 
+const LOBBY_SIZE = process.env.LOBBY_SIZE || 2;
 let players = {};
 let lobby = [];
-const LOBBY_SIZE = 2; // Define the size of the lobby before starting the game
 
 io.on('connection', (socket) => {
     console.log(`Player connected: ${socket.id}`);
-    
-    // Add new player to the lobby
-    lobby.push(socket.id);
-    players[socket.id] = {
-        position: { x: 0, y: 0, z: 0 },
-        role: null,  // Role will be assigned when the lobby is full
-    };
+    try {
+        lobby.push(socket.id);
+        players[socket.id] = { position: { x: 0, y: 0, z: 0 }, role: null };
+        socket.emit('currentPlayers', players);
+        socket.broadcast.emit('newPlayer', { id: socket.id, player: players[socket.id] });
 
-    // Send the current players list to the newly connected player
-    socket.emit('currentPlayers', players);
-
-    // Broadcast new player to others
-    socket.broadcast.emit('newPlayer', { id: socket.id, player: players[socket.id] });
-
-    // Check if the lobby is full
-    if (lobby.length === LOBBY_SIZE) {
-        io.emit('lobbyFull'); // Notify players that the lobby is full
-        assignRoles(); // Assign roles and start the game
-    }
-
-    // When player moves, update the position
-    socket.on('move', (data) => {
-        if (players[socket.id]) {
-            players[socket.id].position = data.position;
-            // Broadcast updated position to other players
-            socket.broadcast.emit('playerMoved', { id: socket.id, position: data.position });
+        if (lobby.length === LOBBY_SIZE) {
+            io.emit('lobbyFull');
+            assignRoles();
         }
-    });
 
-    // Handle player disconnection
-    socket.on('disconnect', () => {
-        console.log(`Player disconnected: ${socket.id}`);
-        delete players[socket.id];
-        lobby = lobby.filter(playerId => playerId !== socket.id); // Remove from lobby
-        io.emit('playerDisconnected', socket.id);
-
-        // Optionally handle lobby reset if necessary
-        if (lobby.length < LOBBY_SIZE) {
-            console.log('Lobby is no longer full. Waiting for more players...');
-        }
-    });
-    socket.on('shoot', (data) => {
-        // Broadcast the shoot event to all other players
-        socket.broadcast.emit('shoot', {
-            id: socket.id,
-            position: data.position,
-            velocity: data.velocity,
+        socket.on('move', (data) => {
+            if (players[socket.id] && isValidPosition(data.position)) {
+                players[socket.id].position = data.position;
+                socket.broadcast.emit('playerMoved', { id: socket.id, position: data.position });
+            }
         });
-    });
 
-    socket.on('chatMessage', (data) => {
-        // Broadcast the message to all players
-        socket.broadcast.emit('chatMessage', data);
-      });
-    
+        socket.on('shoot', (data) => {
+            if (isValidPosition(data.position) && isValidPosition(data.velocity)) {
+                socket.broadcast.emit('shoot', {
+                    id: socket.id,
+                    position: data.position,
+                    velocity: data.velocity,
+                });
+            }
+        });
+
+        socket.on('chatMessage', (data) => {
+            if (typeof data.message === 'string' && data.message.trim().length > 0) {
+                const sanitizedMessage = sanitizeMessage(data.message);
+                socket.broadcast.emit('chatMessage', { id: socket.id, message: sanitizedMessage });
+            }
+        });
+
+        socket.on('disconnect', () => {
+            console.log(`Player disconnected: ${socket.id}`);
+            delete players[socket.id];
+            lobby = lobby.filter((id) => id !== socket.id);
+            io.emit('playerDisconnected', socket.id);
+
+            if (lobby.length < LOBBY_SIZE) {
+                console.log('Lobby is no longer full. Waiting for more players...');
+            }
+        });
+    } catch (err) {
+        console.error(`Error handling socket for ${socket.id}:`, err);
+    }
 });
 
-
-// Function to assign roles to players
 function assignRoles() {
-    console.log('Assigning roles to players...');
-    let roleIndex = 0;
-    const roles = ['Human', 'Insect']; // Define the available roles
-
-    // Assign roles to players in the lobby
-    lobby.forEach((playerId) => {
-        const role = roles[roleIndex];
+    const roles = ['Human', 'Insect'];
+    lobby.forEach((playerId, index) => {
+        const role = roles[index % roles.length];
         players[playerId].role = role;
-        io.to(playerId).emit('assignRole', role); // Send the role to the client
-        roleIndex = (roleIndex + 1) % roles.length; // Alternate between roles
+        io.to(playerId).emit('assignRole', role);
     });
-
-    // Start the game
     startGame();
 }
 
-// Function to start the game
 function startGame() {
-    console.log('Starting the game...');
-    io.emit('startGame'); // Notify all players to start the game
-    // Additional game initialization logic can go here
+    io.emit('startGame');
 }
 
-// Start the server
+function isValidPosition(position) {
+    return (
+        typeof position.x === 'number' &&
+        typeof position.y === 'number' &&
+        typeof position.z === 'number'
+    );
+}
+
+function sanitizeMessage(message) {
+    return message.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 server.listen(3000, () => {
     console.log('Server is running on port 3000');
 });
