@@ -506,7 +506,7 @@ function shootSphere() {
   const forwardDirection = new THREE.Vector3();
   camera.getWorldDirection(forwardDirection);
   sphereMesh.position.copy(startPosition.add(forwardDirection.multiplyScalar(1.5)));
-
+  console.log(playerMesh.position)
   // Cannon.js body for the sphere
   const sphereShape = new CANNON.Sphere(sphereRadius);
   const sphereBody = new CANNON.Body({ mass: sphereMass });
@@ -525,9 +525,16 @@ function shootSphere() {
   sphereBody.gravityScale = 0; // Custom property to control gravity activation later
   world.addBody(sphereBody);
 
-  // Initialize Web Audio API context (if needed)
-  const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+// Initialize the Web Audio API context
+const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
+// Load the "bonk" sound effect
+let vanishSoundBuffer;
+fetch('assets/Bonk Sound Effect.mp3')
+  .then(response => response.arrayBuffer())
+  .then(data => audioContext.decodeAudioData(data))
+  .then(buffer => vanishSoundBuffer = buffer)
+  .catch(e => console.error('Error loading sound:', e));
   // Collision detection on projectile
   sphereBody.addEventListener('collide', (event) => {
     const collidedBody = event.body;
@@ -536,7 +543,10 @@ function shootSphere() {
       // Activate gravity by setting the gravity scale to 1
       sphereBody.gravityScale = 1;
 
-      // Handle obstacle collision
+      // Reapply gravity to the body after collision
+      sphereBody.force.set(0, -world.gravity.y * sphereBody.mass, 0);
+
+      // Optional: Handle collision with obstacle to reduce its health
       if (obstacleBodies.includes(collidedBody)) {
         const obstacleIndex = obstacleBodies.indexOf(collidedBody);
         if (obstacleIndex > -1) {
@@ -547,9 +557,28 @@ function shootSphere() {
           healthBars[obstacleIndex].material.color.setHex(
             healthPercentage > 0.5 ? 0x00ff00 : (healthPercentage > 0.25 ? 0xffff00 : 0xff0000)
           );
-
           if (obstacleHealth[obstacleIndex] <= 0) {
-            // Remove the obstacle and related entities
+            // Calculate distance between player and obstacle
+            const playerPosition = playerMesh.position;
+            const obstaclePosition = obstacles[obstacleIndex].position;
+            const distance = playerPosition.distanceTo(obstaclePosition);
+
+            // Create a sound source and gain node for controlling volume
+            const source = audioContext.createBufferSource();
+            source.buffer = vanishSoundBuffer;
+
+            const gainNode = audioContext.createGain();
+            source.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            // Set volume based on distance (farther distance = quieter)
+            const maxDistance = 50; // Adjust this value based on the size of your scene
+            gainNode.gain.value = Math.max(0, 1 - distance / maxDistance);
+
+            // Play the sound
+            source.start();
+
+            // Remove the obstacle and other related entities
             scene.remove(obstacles[obstacleIndex]);
             scene.remove(healthBars[obstacleIndex]);
             world.removeBody(obstacleBodies[obstacleIndex]);
@@ -558,24 +587,24 @@ function shootSphere() {
             obstacleHealth.splice(obstacleIndex, 1);
             healthBars.splice(obstacleIndex, 1);
 
-            // Optional: Create particle effect
+            // Optional: Create particle effect at the collision point
             createParticleEffect(sphereMesh.position);
-          }
         }
+      }
       }
 
       // Remove the projectile upon collision
       scene.remove(sphereMesh);
       world.removeBody(sphereBody);
-      projectiles = projectiles.filter((p) => p.body !== sphereBody);
+      projectiles = projectiles.filter(p => p.body !== sphereBody);
     }
   });
 
-  // Add the sphere to the scene and projectiles array
   scene.add(sphereMesh);
   projectiles.push({ mesh: sphereMesh, body: sphereBody });
   socket.emit('shoot', { position: sphereMesh.position, velocity: sphereBody.velocity });
 
+  // Add the sphere to the scene and projectiles array
   // Remove the sphere after 10 seconds if it doesn't hit anything
   setTimeout(() => {
     if (projectiles.some((p) => p.body === sphereBody)) {
