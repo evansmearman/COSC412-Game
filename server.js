@@ -21,7 +21,8 @@ io.on('connection', (socket) => {
     console.log(`Player connected: ${socket.id}`);
 
     // Handle lobby creation
-    socket.on('createLobby', ({ playerName, lobbyCode }) => {
+     // Handle lobby creation
+     socket.on('createLobby', ({ playerName, lobbyCode }) => {
         if (!playerName || typeof playerName !== 'string' || playerName.trim().length === 0) {
             socket.emit('error', 'Invalid player name.');
             return;
@@ -63,9 +64,10 @@ io.on('connection', (socket) => {
         };
         socket.join(lobbyCode);
 
-
-        io.to(lobbyCode).emit('updateLobby', { players: lobbies[lobbyCode].players });
-        console.log(lobbies[lobbyCode].players)
+        io.to(lobbyCode).emit('updateLobby', {
+            players: lobbies[lobbyCode].players,
+            host: lobbies[lobbyCode].host,
+        });
 
         socket.emit('lobbyJoined', { lobbyCode, players: lobbies[lobbyCode].players });
 
@@ -77,18 +79,19 @@ io.on('connection', (socket) => {
     socket.on('startGame', ({ lobbyCode }) => {
         if (lobbies[lobbyCode]?.host === socket.id) {
             assignRoles(lobbyCode);
+
             const lobbyPlayers = lobbies[lobbyCode].players.map((player) => ({
                 id: player.id,
                 name: player.name,
                 role: players[player.id].role,
             }));
+
             io.to(lobbyCode).emit('gameStart', { players: lobbyPlayers });
             console.log(`Game started in lobby: ${lobbyCode}`);
         } else {
             socket.emit('error', 'Only the host can start the game.');
         }
     });
-
     // Handle player movement
     socket.on('move', (data) => {
         const player = players[socket.id];
@@ -129,11 +132,16 @@ io.on('connection', (socket) => {
         if (player) {
             const { lobbyCode } = player;
             const lobby = lobbies[lobbyCode];
+
             if (lobby) {
                 lobby.players = lobby.players.filter((p) => p.id !== socket.id);
+
                 if (lobby.host === socket.id && lobby.players.length > 0) {
                     lobby.host = lobby.players[0].id;
-                    io.to(lobbyCode).emit('updateLobby', { players: lobby.players, newHost: lobby.host });
+                    io.to(lobbyCode).emit('updateLobby', {
+                        players: lobby.players,
+                        host: lobby.host,
+                    });
                     console.log(`New host for lobby ${lobbyCode}: ${lobby.host}`);
                 } else if (lobby.players.length === 0) {
                     delete lobbies[lobbyCode];
@@ -141,6 +149,7 @@ io.on('connection', (socket) => {
                     io.to(lobbyCode).emit('updateLobby', { players: lobby.players });
                 }
             }
+
             delete players[socket.id];
         }
     });
@@ -157,6 +166,7 @@ function assignRoles(lobbyCode) {
         console.log(`Assigned role "${role}" to player: ${player.id}`);
     });
 }
+
 // Validate position object
 function isValidPosition(position) {
     return (

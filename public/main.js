@@ -65,10 +65,13 @@ createLobbyButton.addEventListener('click', () => {
   lobbyScreen.style.display = 'flex';
 
   lobbyCodeDisplay.textContent = lobbyCode;
+
+  // Show "Start Game" button for host only
   startGameButton.style.display = 'block';
+  createLobbyButton.style.display = 'none';
+  joinLobbyButton.style.display = 'none';
 });
 
-// Handle joining a lobby
 joinLobbyButton.addEventListener('click', () => {
   const playerName = playerNameInput.value.trim();
   const code = lobbyCodeInput.value.trim().toUpperCase();
@@ -79,6 +82,10 @@ joinLobbyButton.addEventListener('click', () => {
   }
 
   socket.emit('joinLobby', { playerName, lobbyCode: code });
+
+  // Hide buttons after joining
+  createLobbyButton.style.display = 'none';
+  joinLobbyButton.style.display = 'none';
 });
 
 // Handle starting the game
@@ -89,45 +96,51 @@ startGameButton.addEventListener('click', () => {
 
 // Update lobby UI when a new player joins
 socket.on('lobbyUpdate', (data) => {
-  const { players, lobbyCode: code } = data;
-  playersInLobby = players;
-  lobbyCodeDisplay.textContent = code;
+  const { players, host } = data;
 
   // Update player list
   playerList.innerHTML = '';
   players.forEach((player) => {
     const listItem = document.createElement('li');
-    listItem.textContent = player.name;
+    listItem.textContent = player.name + (player.id === host ? ' (Host)' : '');
     playerList.appendChild(listItem);
   });
+
+  // Show or hide the "Start Game" button
+  if (socket.id === host) {
+    startGameButton.style.display = 'block';
+  } else {
+    startGameButton.style.display = 'none';
+  }
+
+  // Hide lobby creation and joining buttons
+  createLobbyButton.style.display = 'none';
+  joinLobbyButton.style.display = 'none';
+
+  console.log('Lobby updated:', players);
 });
 
 // Ensure lobbyScreen is selected correctly
 
 // Transition to game when it starts
 socket.on('gameStart', (data) => {
-  try {
-    console.log("Game starting event received:", data);
+  const { players } = data;
 
-    // Ensure lobbyScreen exists
-    if (!lobbyScreen) {
-      throw new Error("Lobby screen element not found.");
+  console.log("Game starting event received:", data);
+  isGameStarted = true
+  // Hide the lobby screen
+  lobbyScreen.style.display = 'none';
+
+  // Add all players to the game
+  players.forEach((player) => {
+    if (player.id !== socket.id) {
+      addNewPlayer(player.id, { x: 0, y: 0, z: 0 });
     }
+    console.log(`Player ${player.name} loaded with role: ${player.role}`);
+  });
 
-    // Hide the lobby screen
-    lobbyScreen.style.display = 'none';
-    lobbyScreen.offsetHeight; // Force reflow
-    console.log("Lobby screen hidden.");
-
-    // Update game state
-    isGameStarted = true;
-    playerRole = data.role;
-
-    // Start the game animation
-    animate();
-  } catch (error) {
-    console.error("Error during game start:", error);
-  }
+  // Start the game loop
+  animate();
 });
 
 
@@ -372,7 +385,7 @@ const obstacleBodies = []; // Store the obstacle bodies for physics
 const obstacleHealth = [];
 const healthBars = [];
 
-for (let i = 0; i < 1; i++) {
+for (let i = 0; i < 100; i++) {
   // Create the visual obstacle mesh in Three.js
   const obstacle = new THREE.Mesh(obstacleGeometry, obstacleMaterial);
   obstacle.position.set((Math.random() - 0.5) * 100, 1, (Math.random() - 0.5) * 100);
