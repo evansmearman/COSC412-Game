@@ -2,7 +2,27 @@ import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { io } from 'socket.io-client';
+import { nanoid } from 'nanoid';
+
 const socket = io();
+
+
+
+// Lobby and UI elements
+const titleScreen = document.getElementById('titleScreen');
+const lobbyScreen = document.querySelector('#lobbyScreen'); // Ensures proper selection
+const playerNameInput = document.getElementById('playerNameInput');
+const createLobbyButton = document.getElementById('createLobbyButton');
+const joinLobbyButton = document.getElementById('joinLobbyButton');
+const lobbyCodeInput = document.getElementById('lobbyCodeInput');
+const lobbyCodeDisplay = document.getElementById('lobbyCodeDisplay');
+const playerList = document.getElementById('playerList');
+const startGameButton = document.getElementById('startGameButton');
+
+// Game variables
+let lobbyCode = '';
+let playersInLobby = [];
+let playerRole = '';
 
 // Create Three.js scene
 const scene = new THREE.Scene();
@@ -21,6 +41,129 @@ document.body.appendChild(renderer.domElement);
 const world = new CANNON.World();
 world.gravity.set(0, -9.82, 0); // Apply gravity
 
+
+
+// Game setup variables
+const players = {};
+let isGameStarted = false;
+
+
+
+
+// Handle lobby creation
+createLobbyButton.addEventListener('click', () => {
+  const playerName = playerNameInput.value.trim();
+  if (!playerName) {
+    alert('Please enter your name.');
+    return;
+  }
+
+  lobbyCode = nanoid(6).toUpperCase();
+  socket.emit('createLobby', { playerName, lobbyCode });
+
+  titleScreen.style.display = 'none';
+  lobbyScreen.style.display = 'flex';
+
+  lobbyCodeDisplay.textContent = lobbyCode;
+  startGameButton.style.display = 'block';
+});
+
+// Handle joining a lobby
+joinLobbyButton.addEventListener('click', () => {
+  const playerName = playerNameInput.value.trim();
+  const code = lobbyCodeInput.value.trim().toUpperCase();
+
+  if (!playerName || !code) {
+    alert('Please enter your name and a lobby code.');
+    return;
+  }
+
+  socket.emit('joinLobby', { playerName, lobbyCode: code });
+});
+
+// Handle starting the game
+startGameButton.addEventListener('click', () => {
+  console.log("hit")
+  socket.emit('startGame', { lobbyCode });
+});
+
+// Update lobby UI when a new player joins
+socket.on('lobbyUpdate', (data) => {
+  const { players, lobbyCode: code } = data;
+  playersInLobby = players;
+  lobbyCodeDisplay.textContent = code;
+
+  // Update player list
+  playerList.innerHTML = '';
+  players.forEach((player) => {
+    const listItem = document.createElement('li');
+    listItem.textContent = player.name;
+    playerList.appendChild(listItem);
+  });
+});
+
+// Ensure lobbyScreen is selected correctly
+
+// Transition to game when it starts
+socket.on('gameStart', (data) => {
+  try {
+    console.log("Game starting event received:", data);
+
+    // Ensure lobbyScreen exists
+    if (!lobbyScreen) {
+      throw new Error("Lobby screen element not found.");
+    }
+
+    // Hide the lobby screen
+    lobbyScreen.style.display = 'none';
+    lobbyScreen.offsetHeight; // Force reflow
+    console.log("Lobby screen hidden.");
+
+    // Update game state
+    isGameStarted = true;
+    playerRole = data.role;
+
+    // Start the game animation
+    animate();
+  } catch (error) {
+    console.error("Error during game start:", error);
+  }
+});
+
+
+// Additional Three.js and Cannon.js game setup (same as existing code)
+
+// Synchronize player positions
+socket.on('updatePlayerPositions', (data) => {
+  data.forEach(({ id, position }) => {
+    if (id !== socket.id) {
+      if (!players[id]) {
+        players[id] = createPlayerMesh();
+        scene.add(players[id]);
+      }
+      players[id].position.set(position.x, position.y, position.z);
+    }
+  });
+});
+
+// Remove disconnected players
+socket.on('playerDisconnect', (id) => {
+  if (players[id]) {
+    scene.remove(players[id]);
+    delete players[id];
+  }
+});
+
+function createPlayerMesh() {
+  const geometry = new THREE.BoxGeometry();
+  const material = new THREE.MeshBasicMaterial({ color: Math.random() * 0xffffff });
+  return new THREE.Mesh(geometry, material);
+}
+
+
+
+
+
 // Ground physics body for Cannon.js
 const groundBody = new CANNON.Body({ mass: 0 }); // Static ground
 const groundShape = new CANNON.Plane();
@@ -29,15 +172,6 @@ groundBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
 world.addBody(groundBody);
 
 // Create a loading message
-const loadingMessage = document.createElement('div');
-loadingMessage.style.position = 'absolute';
-loadingMessage.style.top = '50%';
-loadingMessage.style.left = '50%';
-loadingMessage.style.transform = 'translate(-50%, -50%)';
-loadingMessage.style.color = 'black';
-loadingMessage.style.fontSize = '24px';
-loadingMessage.innerText = 'Waiting for other players...';
-document.body.appendChild(loadingMessage);
 
 
 // Create chat container
@@ -238,7 +372,7 @@ const obstacleBodies = []; // Store the obstacle bodies for physics
 const obstacleHealth = [];
 const healthBars = [];
 
-for (let i = 0; i < 0; i++) {
+for (let i = 0; i < 1; i++) {
   // Create the visual obstacle mesh in Three.js
   const obstacle = new THREE.Mesh(obstacleGeometry, obstacleMaterial);
   obstacle.position.set((Math.random() - 0.5) * 100, 1, (Math.random() - 0.5) * 100);
@@ -300,7 +434,7 @@ document.addEventListener('mousemove', (event) => {
 });
 
 document.addEventListener('click', () => {
-  if (!mouseLocked) {
+  if (isGameStarted && !mouseLocked) {
     document.body.requestPointerLock();
     mouseLocked = true;
   }
@@ -592,13 +726,6 @@ socket.on('newPlayer', (data) => {
 socket.on('playerMoved', (data) => {
   if (otherPlayers[data.id]) {
     otherPlayers[data.id].position.set(data.position.x, data.position.y, data.position.z);
-  }
-});
-
-socket.on('playerDisconnected', (id) => {
-  if (otherPlayers[id]) {
-    scene.remove(otherPlayers[id]);
-    delete otherPlayers[id];
   }
 });
 
