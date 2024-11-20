@@ -252,6 +252,109 @@ loader.load(
     console.error('An error happened while loading the .glb file:', error);
   }
 );
+loader.load(
+  'assets/Pop Tarts.glb', // Path to the GLB file
+  (gltf) => {
+    gltf.scene.scale.set(25, 25, 25)
+    const glbScene = gltf.scene;
+    glbScene.traverse((child) => {
+      if (child.isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+    scene.add(glbScene);
+  },
+  (xhr) => {
+    console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+  },
+  (error) => {
+    console.error('An error happened while loading the .glb file:', error);
+  }
+);
+loader.load(
+  'assets/Frying Pan.glb', // Path to the GLB file
+  (gltf) => {
+    gltf.scene.scale.set(50, 50, 50)
+    const glbScene = gltf.scene;
+    glbScene.traverse((child) => {
+      if (child.isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+    scene.add(glbScene);
+  },
+  (xhr) => {
+    console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+  },
+  (error) => {
+    console.error('An error happened while loading the .glb file:', error);
+  }
+);
+loader.load(
+  'assets/Tea Kettle.glb', // Path to the GLB file
+  (gltf) => {
+    gltf.scene.scale.set(50, 50, 50)
+    const glbScene = gltf.scene;
+    glbScene.traverse((child) => {
+      if (child.isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+    scene.add(glbScene);
+  },
+  (xhr) => {
+    console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+  },
+  (error) => {
+    console.error('An error happened while loading the .glb file:', error);
+  }
+);
+loader.load(
+  'assets/Toaster.glb', // Path to the GLB file
+  (gltf) => {
+    gltf.scene.scale.set(50, 50, 50)
+    const glbScene = gltf.scene;
+    glbScene.traverse((child) => {
+      if (child.isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+    scene.add(glbScene);
+  },
+  (xhr) => {
+    console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+  },
+  (error) => {
+    console.error('An error happened while loading the .glb file:', error);
+  }
+);
+loader.load(
+  'assets/Kitchen Knives.glb', // Path to the GLB file
+  (gltf) => {
+    gltf.scene.scale.set(50, 50, 50)
+    const glbScene = gltf.scene;
+    glbScene.traverse((child) => {
+      if (child.isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+    scene.add(glbScene);
+  },
+  (xhr) => {
+    console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+  },
+  (error) => {
+    console.error('An error happened while loading the .glb file:', error);
+  }
+);
+
+
+
 
 // Load and replace the cube with the Fly model
 
