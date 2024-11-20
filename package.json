@@ -18,7 +18,8 @@
     "nanoid": "^5.0.8",
     "socket.io": "^4.7.5",
     "tailwind": "^4.0.0",
-    "three": "^0.168.0"
+    "three": "^0.168.0",
+    "three-to-cannon": "^5.0.2"
   },
   "devDependencies": {
     "@types/cannon": "^0.1.13"

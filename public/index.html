@@ -26,7 +26,8 @@
         "three/examples/jsm/loaders/GLTFLoader": "https://cdn.jsdelivr.net/npm/three@0.152.2/examples/jsm/loaders/GLTFLoader.js",
         "cannon-es": "https://cdn.jsdelivr.net/npm/cannon-es@0.18.0/dist/cannon-es.js",
         "socket.io-client": "https://cdn.jsdelivr.net/npm/socket.io-client@4.5.1/dist/socket.io.esm.min.js",
-        "nanoid": "https://cdn.jsdelivr.net/npm/nanoid@4.0.0/nanoid.js"
+        "nanoid": "https://cdn.jsdelivr.net/npm/nanoid@4.0.0/nanoid.js",
+        "three-to-cannon": "https://cdn.jsdelivr.net/npm/three-to-cannon@5.0.2/+esm"
       }
     }
   </script>
@@ -63,6 +64,14 @@
       class="mt-4 px-4 py-2 text-black rounded-md focus:ring-2 focus:ring-button outline-none"
     />
   </div>
+
+  <div id="gameEndScreen" class="hidden fixed inset-0 bg-black bg-opacity-80 flex flex-col items-center justify-center text-white text-center">
+    <p class="text-4xl font-bold mb-8">Game Over! All obstacles have been destroyed.</p>
+    <button id="returnToLobbyButton" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white text-lg font-semibold rounded shadow-lg">
+      Return to Lobby
+    </button>
+  </div>
+  
 
   <!-- Lobby Screen -->
   <div id="lobbyScreen" class="hidden flex flex-col items-center justify-center h-screen bg-gray-800">

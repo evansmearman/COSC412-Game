@@ -385,7 +385,7 @@ const obstacleBodies = []; // Store the obstacle bodies for physics
 const obstacleHealth = [];
 const healthBars = [];
 
-for (let i = 0; i < 100; i++) {
+for (let i = 0; i < 1; i++) {
   // Create the visual obstacle mesh in Three.js
   const obstacle = new THREE.Mesh(obstacleGeometry, obstacleMaterial);
   obstacle.position.set((Math.random() - 0.5) * 100, 1, (Math.random() - 0.5) * 100);
@@ -590,6 +590,10 @@ fetch('assets/Bonk Sound Effect.mp3')
             // Optional: Create particle effect at the collision point
             createParticleEffect(sphereMesh.position);
         }
+          console.log(obstacleBodies)
+        if (obstacleBodies.length === 0) {
+          endGame(); // Trigger game-end logic
+        }
       }
       }
 
@@ -685,6 +689,11 @@ function updateProjectiles() {
 }
 
 function animate() {
+  if (!isGameStarted) return; // Stop the game loop if the game has ended
+
+
+
+
   requestAnimationFrame(animate);
   world.step(1 / 60);
 
@@ -750,6 +759,29 @@ socket.on('shoot', (data) => {
   // Add to the projectiles array for updates
   projectiles.push({ mesh: sphereMesh, body: sphereBody });
 });
+function endGame() {
+  console.log('Game over: All obstacles destroyed!');
+  isGameStarted = false;
+
+  // Display the game end screen
+  const gameEndScreen = document.getElementById('gameEndScreen');
+  gameEndScreen.classList.remove('hidden'); // Show the end screen
+  gameEndScreen.classList.add('flex');
+
+  // Set up return to lobby button
+  const returnToLobbyButton = document.getElementById('returnToLobbyButton');
+  returnToLobbyButton.addEventListener('click', () => {
+    // Hide the end screen and show the lobby screen
+    gameEndScreen.classList.remove('flex');
+    gameEndScreen.classList.add('hidden');
+    lobbyScreen.style.display = 'flex';
+
+    // Notify the server to reset the game for all players
+    socket.emit('returnToLobby', { lobbyCode });
+
+    // Reset any game-specific variables here if needed
+  });
+}
 
 
 socket.on('currentPlayers', (players) => {

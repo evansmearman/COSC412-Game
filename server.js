@@ -1,7 +1,6 @@
 import express from 'express';
 import http from 'http';
 import { Server } from 'socket.io';
-import { nanoid } from 'nanoid'; // To generate unique lobby codes
 
 const app = express();
 const server = http.createServer(app);
@@ -12,17 +11,15 @@ app.use(express.static('public'));
 const LOBBY_SIZE = process.env.LOBBY_SIZE || 2;
 
 // Data structures for managing lobbies and players
-let lobbies = {}; // { lobbyCode: { players: [], host: socketId } }
+let lobbies = {}; // { lobbyCode: { players: [], host: socketId, gameStarted: false } }
 let players = {}; // { socketId: { name: string, position: {x, y, z}, role: null, lobbyCode: string } }
 
 // Socket.io connection
-
 io.on('connection', (socket) => {
     console.log(`Player connected: ${socket.id}`);
 
     // Handle lobby creation
-     // Handle lobby creation
-     socket.on('createLobby', ({ playerName, lobbyCode }) => {
+    socket.on('createLobby', ({ playerName, lobbyCode }) => {
         if (!playerName || typeof playerName !== 'string' || playerName.trim().length === 0) {
             socket.emit('error', 'Invalid player name.');
             return;
@@ -32,7 +29,11 @@ io.on('connection', (socket) => {
             return;
         }
 
-        lobbies[lobbyCode] = { players: [{ id: socket.id, name: playerName }], host: socket.id };
+        lobbies[lobbyCode] = { 
+            players: [{ id: socket.id, name: playerName }], 
+            host: socket.id, 
+            gameStarted: false 
+        };
         players[socket.id] = {
             name: playerName,
             position: { x: 0, y: 0, z: 0 },
@@ -74,10 +75,10 @@ io.on('connection', (socket) => {
         console.log(`Player ${playerName} joined lobby: ${lobbyCode}`);
     });
 
-
     // Handle starting the game
     socket.on('startGame', ({ lobbyCode }) => {
         if (lobbies[lobbyCode]?.host === socket.id) {
+            lobbies[lobbyCode].gameStarted = true;
             assignRoles(lobbyCode);
 
             const lobbyPlayers = lobbies[lobbyCode].players.map((player) => ({
@@ -92,6 +93,7 @@ io.on('connection', (socket) => {
             socket.emit('error', 'Only the host can start the game.');
         }
     });
+
     // Handle player movement
     socket.on('move', (data) => {
         const player = players[socket.id];
@@ -123,6 +125,22 @@ io.on('connection', (socket) => {
                 message: sanitizedMessage,
             });
         }
+    });
+
+    // Handle game ending
+    socket.on('gameEnded', ({ lobbyCode }) => {
+        console.log(`Game ended for lobby: ${lobbyCode}`);
+        if (lobbies[lobbyCode]) {
+            lobbies[lobbyCode].gameStarted = false;
+        }
+        io.to(lobbyCode).emit('gameEnded');
+    });
+
+    // Handle returning to the lobby
+    socket.on('returnToLobby', ({ lobbyCode }) => {
+        console.log(`Returning players in lobby ${lobbyCode} to the lobby screen.`);
+        resetLobbyState(lobbyCode);
+        io.to(lobbyCode).emit('returnToLobby');
     });
 
     // Handle disconnection
@@ -165,6 +183,19 @@ function assignRoles(lobbyCode) {
         io.to(player.id).emit('assignRole', role);
         console.log(`Assigned role "${role}" to player: ${player.id}`);
     });
+}
+
+// Reset lobby state
+function resetLobbyState(lobbyCode) {
+    const lobby = lobbies[lobbyCode];
+    if (lobby) {
+        lobby.gameStarted = false;
+        lobby.players.forEach((player) => {
+            players[player.id].position = { x: 0, y: 0, z: 0 };
+            players[player.id].role = null;
+        });
+        console.log(`Lobby ${lobbyCode} has been reset.`);
+    }
 }
 
 // Validate position object
