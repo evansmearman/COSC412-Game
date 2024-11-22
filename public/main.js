@@ -180,16 +180,18 @@ function createPlayerMesh() {
 // Ground physics body for Cannon.js
 const groundBody = new CANNON.Body({ mass: 0 }); // Static ground
 const groundShape = new CANNON.Plane();
+console.log(groundShape)
 groundBody.addShape(groundShape);
 groundBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
+groundBody.position.set(0, -23, 0)
 world.addBody(groundBody);
 
 
-const ceilingBody = new CANNON.Body({ mass: 0 }); // Static ground
-const ceilingShape = new CANNON.Plane();
-ceilingBody.addShape(ceilingShape);
-ceilingBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
-world.addBody(ceilingBody);
+// const ceilingBody = new CANNON.Body({ mass: 0 }); // Static ground
+// const ceilingShape = new CANNON.Plane();
+// ceilingBody.addShape(ceilingShape);
+// ceilingBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
+// world.addBody(ceilingBody);
 
 // Create a loading message
 
@@ -475,9 +477,128 @@ loader.load(
 
 // Load and replace the cube with the Fly model
 
+let powerUpMesh;
+const powerUpPosition = new THREE.Vector3((Math.random() - 0.5) * 100, 0, (Math.random() - 0.5) * 100); // Random position
 
+function createGlowEffect(position) {
+  const glowGeometry = new THREE.SphereGeometry(3, 32, 32); // Larger than the power-up for the halo effect
+  const glowMaterial = new THREE.ShaderMaterial({
+    uniforms: {
+      viewVector: { type: "v3", value: camera.position },
+      c: { type: "f", value: 0.5 },
+      p: { type: "f", value: 2.0 },
+      glowColor: { type: "c", value: new THREE.Color(0xffcc00) }, // Yellow glow
+    },
+    vertexShader: `
+      uniform vec3 viewVector;
+      uniform float c;
+      uniform float p;
+      varying float intensity;
+      void main() {
+        vec3 vNormal = normalize(normalMatrix * normal);
+        vec3 vNormel = normalize(normalMatrix * viewVector - modelViewMatrix * vec4(position, 1.0)).xyz;
+        intensity = pow(c - dot(vNormal, vNormel), p);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      uniform vec3 glowColor;
+      varying float intensity;
+      void main() {
+        gl_FragColor = vec4(glowColor, intensity);
+      }
+    `,
+    side: THREE.BackSide,
+    blending: THREE.AdditiveBlending,
+    transparent: true,
+  });
 
+  const glowMesh = new THREE.Mesh(glowGeometry, glowMaterial);
+  glowMesh.position.copy(position);
+  glowMesh.scale.set(1.2, 1.2, 1.2); // Slightly larger than the power-up
+  return glowMesh;
+}
 
+// Create and add the glow around the power-up
+loader.load(
+  'assets/Pickup Thunder.glb', // Path to the power-up .glb model
+  (gltf) => {
+    powerUpMesh = gltf.scene;
+    powerUpMesh.scale.set(10, 10, 10); // Adjust size
+    powerUpMesh.position.copy(powerUpPosition);
+
+    // Add glow effect
+    const glowEffect = createGlowEffect(powerUpPosition);
+    scene.add(glowEffect);
+
+    powerUpMesh.traverse((child) => {
+      if (child.isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+
+    scene.add(powerUpMesh);
+    if (gltf.animations && gltf.animations.length > 0) {
+      animationMixer = new THREE.AnimationMixer(powerUpMesh);
+      const action = animationMixer.clipAction(gltf.animations[0]); // Play the first animation
+      action.play();
+    }
+    // Optional: Add a light source to enhance the glow
+    const powerUpLight = new THREE.PointLight(0xffcc00, 1, 10);
+    powerUpLight.position.copy(powerUpPosition);
+    scene.add(powerUpLight);
+  },
+  undefined,
+  (error) => {
+    console.error('Error loading power-up model:', error);
+  }
+);
+const powerUpShape = new CANNON.Sphere(2); // Match the size of the power-up
+const powerUpBody = new CANNON.Body({
+  mass: 0, // Static body
+  position: new CANNON.Vec3(powerUpPosition.x, powerUpPosition.y, powerUpPosition.z),
+});
+powerUpBody.addShape(powerUpShape);
+world.addBody(powerUpBody);
+
+function checkPowerUpCollision() {
+  const distance = playerMesh.position.distanceTo(powerUpMesh.position);
+
+  // If player is near the power-up
+  if (distance < 2) {
+    collectPowerUp();
+  }
+}
+
+function collectPowerUp() {
+  // Remove power-up from scene and physics world
+  scene.remove(powerUpMesh);
+  world.removeBody(powerUpBody);
+
+  // Boost player's speed
+  boostPlayerSpeed();
+
+  // Optionally: Emit an event to the server
+  socket.emit('powerUpCollected', { playerId: socket.id });
+}
+
+function boostPlayerSpeed() {
+  const originalSpeed = playerSpeed;
+  playerSpeed = 3; // Boosted speed
+
+  // Reset speed after 7 seconds
+  setTimeout(() => {
+    playerSpeed = originalSpeed;
+  }, 7000);
+
+  // Optional: Visual feedback for speed boost
+  console.log('Speed boost activated!');
+}
+function animateGlowEffect(glowMesh) {
+  const scale = 1 + 0.1 * Math.sin(Date.now() * 0.005); // Pulsating effect
+  glowMesh.scale.set(scale, scale, scale);
+}
 // LIGHTS
 
 const hemiLight = new THREE.HemisphereLight( 0x87CEEB, 0xffffff, 1 );
@@ -592,7 +713,7 @@ for (let i = 0; i < 1; i++) {
 }
 
 // Movement, control, and role variables
-const playerSpeed = 1;
+let playerSpeed = 1;
 let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
 let yaw = 0, pitch = 0;
 let isJumping = false;
@@ -880,7 +1001,11 @@ function animate() {
   } catch (err) {
     console.error('Physics simulation error:', err);
   }
-
+ // Update glow effect if it exists
+ if (powerUpMesh) {
+  animateGlowEffect(powerUpMesh);
+}
+  checkPowerUpCollision(); // Check collision with power-up
   updateProjectiles();
 
   let direction = new THREE.Vector3();
