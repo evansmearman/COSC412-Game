@@ -3,7 +3,6 @@ import * as CANNON from 'cannon-es';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { io } from 'socket.io-client';
 import { nanoid } from 'nanoid';
-
 const socket = io();
 
 
@@ -41,6 +40,7 @@ document.body.appendChild(renderer.domElement);
 const world = new CANNON.World();
 world.gravity.set(0, -9.82, 0); // Apply gravity
 
+// Ammo.js physics setup
 
 
 // Game setup variables
@@ -184,6 +184,13 @@ groundBody.addShape(groundShape);
 groundBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
 world.addBody(groundBody);
 
+
+const ceilingBody = new CANNON.Body({ mass: 0 }); // Static ground
+const ceilingShape = new CANNON.Plane();
+ceilingBody.addShape(ceilingShape);
+ceilingBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
+world.addBody(ceilingBody);
+
 // Create a loading message
 
 
@@ -230,128 +237,238 @@ const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
 const playerMesh = new THREE.Mesh(geometry, material);
 scene.background = new THREE.Color(0x87CEEB);
 scene.add(playerMesh);
+function visualizeTrimesh(trimesh, scene) {
+  const geometry = new THREE.BufferGeometry();
 
+  // Convert the Cannon.js trimesh vertices and indices into a Three.js geometry
+  const vertices = new Float32Array(trimesh.vertices);
+  const indices = new Uint16Array(trimesh.indices);
 
+  geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+  geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+
+  // Create a wireframe material
+  const material = new THREE.LineBasicMaterial({ color: 0xff0000 });
+  const wireframe = new THREE.LineSegments(new THREE.EdgesGeometry(geometry), material);
+
+  // Add to the scene
+  scene.add(wireframe);
+
+  return wireframe;
+}
+// Variable to control the Y offset of the bounding box
+let boundingYOffset = 0; // Default offset is 0
+
+// Function to load GLTF model and adjust based on bounding box
+// Load the GLTF model and center the scene at y=0
 const loader = new GLTFLoader();
 loader.load(
-  'assets/untitled.glb', // Path to the GLB file
+  'assets/Apartment 2.glb', // Path to the GLB file
   (gltf) => {
     const glbScene = gltf.scene;
+
+    // Scale the scene
+    const scaleFactor = 500;
+    glbScene.scale.set(scaleFactor, scaleFactor, scaleFactor);
+    glbScene.position.y = 50;
+
+    // Compute bounding box
+    const boundingBox = new THREE.Box3().setFromObject(glbScene);
+    const sceneBottomY = boundingBox.min.y; // Bottom of the scene
+
+    // Adjust the scene position to align its bottom at y=0
+
+    // Traverse the scene for physics bodies
     glbScene.traverse((child) => {
       if (child.isMesh) {
-        child.castShadow = true;
-        child.receiveShadow = true;
+        const geometry = child.geometry;
+
+        if (geometry && geometry.attributes.position) {
+          // Extract vertices and indices
+          const vertices = Array.from(geometry.attributes.position.array);
+          const indices = geometry.index ? Array.from(geometry.index.array) : undefined;
+
+          // Scale vertices for Trimesh
+          const scaledVertices = [];
+          for (let i = 0; i < vertices.length; i += 3) {
+            scaledVertices.push(
+              vertices[i] * scaleFactor,
+              vertices[i + 1] * scaleFactor,
+              vertices[i + 2] * scaleFactor
+            );
+          }
+
+          // Apply world transformation to vertices
+          const position = new THREE.Vector3();
+          const quaternion = new THREE.Quaternion();
+          const scale = new THREE.Vector3();
+          position.y += 50;
+
+          child.updateMatrixWorld(); // Ensure the world matrix is up to date
+          child.matrixWorld.decompose(position, quaternion, scale);
+
+          // Create the Trimesh
+          const trimesh = new CANNON.Trimesh(scaledVertices, indices);
+
+          // Create a physics body
+          const body = new CANNON.Body({
+            mass: 0, // Static object
+            shape: trimesh,
+          });
+
+          // Position and rotate the body to match the object
+          body.position.set(position.x, position.y, position.z);
+          body.quaternion.set(quaternion.x, quaternion.y, quaternion.z, quaternion.w);
+
+          // Add the body to the physics world
+          world.addBody(body);
+
+          // Optional: Visualize the Trimesh
+          // visualizeTrimesh(trimesh, scene);
+        }
       }
     });
+
+    // Add the GLTF scene to the Three.js scene
     scene.add(glbScene);
+
+    // // Create a floor plane at y=0
+    // const groundMesh = new THREE.Mesh(
+    //   new THREE.PlaneGeometry(1000, 1000), // Large plane size
+    //   new THREE.MeshStandardMaterial({ color: 0x808080 })
+    // );
+    // groundMesh.rotation.x = -Math.PI / 2; // Rotate to lie flat
+    // groundMesh.position.y = 0;
+    // groundMesh.receiveShadow = true;
+    // groundMesh.visible = false;
+    // scene.add(groundMesh);
+    
+
+
+    // const ceilingMesh = new THREE.Mesh(
+    //   new THREE.PlaneGeometry(1000, 1000), // Large plane size
+    //   new THREE.MeshStandardMaterial({ color: 0x808080 })
+    // );
+    // ceilingMesh.rotation.x = -Math.PI / 2; // Rotate to lie flat
+    // ceilingMesh.position.y = 100;
+    // ceilingMesh.receiveShadow = true;
+    // ceilingMesh.visible = true;
+    // scene.add(ceilingMesh);
+
+    // // Update ground physics body
+    // groundBody.position.set(0, 0, 0);
+    // world.addBody(groundBody);
+    
   },
-  (xhr) => {
-    console.log((xhr.loaded / xhr.total * 100) + '% loaded');
-  },
+  undefined,
   (error) => {
-    console.error('An error happened while loading the .glb file:', error);
+    console.error('An error occurred while loading the GLTF model:', error);
   }
 );
-loader.load(
-  'assets/Pop Tarts.glb', // Path to the GLB file
-  (gltf) => {
-    gltf.scene.scale.set(25, 25, 25)
-    const glbScene = gltf.scene;
-    glbScene.traverse((child) => {
-      if (child.isMesh) {
-        child.castShadow = true;
-        child.receiveShadow = true;
-      }
-    });
-    scene.add(glbScene);
-  },
-  (xhr) => {
-    console.log((xhr.loaded / xhr.total * 100) + '% loaded');
-  },
-  (error) => {
-    console.error('An error happened while loading the .glb file:', error);
-  }
-);
-loader.load(
-  'assets/Frying Pan.glb', // Path to the GLB file
-  (gltf) => {
-    gltf.scene.scale.set(50, 50, 50)
-    const glbScene = gltf.scene;
-    glbScene.traverse((child) => {
-      if (child.isMesh) {
-        child.castShadow = true;
-        child.receiveShadow = true;
-      }
-    });
-    scene.add(glbScene);
-  },
-  (xhr) => {
-    console.log((xhr.loaded / xhr.total * 100) + '% loaded');
-  },
-  (error) => {
-    console.error('An error happened while loading the .glb file:', error);
-  }
-);
-loader.load(
-  'assets/Tea Kettle.glb', // Path to the GLB file
-  (gltf) => {
-    gltf.scene.scale.set(50, 50, 50)
-    const glbScene = gltf.scene;
-    glbScene.traverse((child) => {
-      if (child.isMesh) {
-        child.castShadow = true;
-        child.receiveShadow = true;
-      }
-    });
-    scene.add(glbScene);
-  },
-  (xhr) => {
-    console.log((xhr.loaded / xhr.total * 100) + '% loaded');
-  },
-  (error) => {
-    console.error('An error happened while loading the .glb file:', error);
-  }
-);
-loader.load(
-  'assets/Toaster.glb', // Path to the GLB file
-  (gltf) => {
-    gltf.scene.scale.set(50, 50, 50)
-    const glbScene = gltf.scene;
-    glbScene.traverse((child) => {
-      if (child.isMesh) {
-        child.castShadow = true;
-        child.receiveShadow = true;
-      }
-    });
-    scene.add(glbScene);
-  },
-  (xhr) => {
-    console.log((xhr.loaded / xhr.total * 100) + '% loaded');
-  },
-  (error) => {
-    console.error('An error happened while loading the .glb file:', error);
-  }
-);
-loader.load(
-  'assets/Kitchen Knives.glb', // Path to the GLB file
-  (gltf) => {
-    gltf.scene.scale.set(50, 50, 50)
-    const glbScene = gltf.scene;
-    glbScene.traverse((child) => {
-      if (child.isMesh) {
-        child.castShadow = true;
-        child.receiveShadow = true;
-      }
-    });
-    scene.add(glbScene);
-  },
-  (xhr) => {
-    console.log((xhr.loaded / xhr.total * 100) + '% loaded');
-  },
-  (error) => {
-    console.error('An error happened while loading the .glb file:', error);
-  }
-);
+
+
+
+
+// loader.load(
+//   'assets/Pop Tarts.glb', // Path to the GLB file
+//   (gltf) => {
+//     gltf.scene.scale.set(25, 25, 25)
+//     const glbScene = gltf.scene;
+//     glbScene.traverse((child) => {
+//       if (child.isMesh) {
+//         child.castShadow = true;
+//         child.receiveShadow = true;
+//       }
+//     });
+//     scene.add(glbScene);
+//   },
+//   (xhr) => {
+//     console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+//   },
+//   (error) => {
+//     console.error('An error happened while loading the .glb file:', error);
+//   }
+// );
+// loader.load(
+//   'assets/Frying Pan.glb', // Path to the GLB file
+//   (gltf) => {
+//     gltf.scene.scale.set(50, 50, 50)
+//     const glbScene = gltf.scene;
+//     glbScene.traverse((child) => {
+//       if (child.isMesh) {
+//         child.castShadow = true;
+//         child.receiveShadow = true;
+//       }
+//     });
+//     scene.add(glbScene);
+//   },
+//   (xhr) => {
+//     console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+//   },
+//   (error) => {
+//     console.error('An error happened while loading the .glb file:', error);
+//   }
+// );
+// loader.load(
+//   'assets/Tea Kettle.glb', // Path to the GLB file
+//   (gltf) => {
+//     gltf.scene.scale.set(50, 50, 50)
+//     const glbScene = gltf.scene;
+//     glbScene.traverse((child) => {
+//       if (child.isMesh) {
+//         child.castShadow = true;
+//         child.receiveShadow = true;
+//       }
+//     });
+//     scene.add(glbScene);
+//   },
+//   (xhr) => {
+//     console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+//   },
+//   (error) => {
+//     console.error('An error happened while loading the .glb file:', error);
+//   }
+// );
+// loader.load(
+//   'assets/Toaster.glb', // Path to the GLB file
+//   (gltf) => {
+//     gltf.scene.scale.set(50, 50, 50)
+//     const glbScene = gltf.scene;
+//     glbScene.traverse((child) => {
+//       if (child.isMesh) {
+//         child.castShadow = true;
+//         child.receiveShadow = true;
+//       }
+//     });
+//     scene.add(glbScene);
+//   },
+//   (xhr) => {
+//     console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+//   },
+//   (error) => {
+//     console.error('An error happened while loading the .glb file:', error);
+//   }
+// );
+// loader.load(
+//   'assets/Kitchen Knives.glb', // Path to the GLB file
+//   (gltf) => {
+//     gltf.scene.scale.set(50, 50, 50)
+//     const glbScene = gltf.scene;
+//     glbScene.traverse((child) => {
+//       if (child.isMesh) {
+//         child.castShadow = true;
+//         child.receiveShadow = true;
+//       }
+//     });
+//     scene.add(glbScene);
+//   },
+//   (xhr) => {
+//     console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+//   },
+//   (error) => {
+//     console.error('An error happened while loading the .glb file:', error);
+//   }
+// );
 
 
 
@@ -402,7 +519,7 @@ scene.add( dirLightHelper );
 // Store other players
 let otherPlayers = {};
 
-const spawnHeight = 3; // Adjust as needed to set initial spawn height above ground
+const spawnHeight = 0; // Adjust as needed to set initial spawn height above ground
 camera.position.set(0, spawnHeight, 0); // Place the camera at a height above ground
 playerMesh.position.set(0, spawnHeight, 0); // Place the player mesh at the same height
 playerMesh.castShadow = true; // Cast shadows
@@ -410,6 +527,8 @@ playerMesh.receiveShadow = true; // Receive shadows
 playerMesh.add(camera); // Attach camera to player mesh
 
 
+const ceilingHeight = 0
+const ceilingMesh = new THREE.PlaneGeometry(750, ) 
 
 // Define boundary dimensions
 const boundary = { x: 124, y: 128.5, z: 138.6 };
@@ -419,65 +538,17 @@ function keepPlayerWithinBounds() {
   const pos = playerMesh.position;
   
   // Define different boundaries for -x and +x
-  const xMin = -150; // Boundary for -x
-  const xMax = 175.9;  // Boundary for +x
+  const xMin = -1000; // Boundary for -x
+  const xMax = 1000;  // Boundary for +x
 
-  const zMin = -178.8
-  const zMax = 179
+  const zMin = -1000
+  const zMax = 1000
   // Apply the boundaries
   pos.x = THREE.MathUtils.clamp(pos.x, xMin, xMax);
-  pos.y = THREE.MathUtils.clamp(pos.y, 0, boundary.y);
+  // pos.y = THREE.MathUtils.clamp(pos.y, 0, boundary.y);
   pos.z = THREE.MathUtils.clamp(pos.z, zMin, zMax);
 
 }
-function createVisibleBoundaries() {
-  const boundarySize = boundary.x; // Match barrier size
-  const boundaryHeight = boundary.y; // Match barrier height
-  const boundaryZ = boundary.z
-
-  // Material for the boundary lines
-  const boundaryMaterial = new THREE.LineBasicMaterial({ color: 0xff0000 });
-
-  // Create a box geometry for the boundary
-  const boxGeometry = new THREE.BoxGeometry(boundarySize * 2, boundaryHeight * 2, boundaryZ * 2);
-  const edges = new THREE.EdgesGeometry(boxGeometry);
-
-  // Create line segments for the boundary
-  const boundaryMesh = new THREE.LineSegments(edges, boundaryMaterial);
-  boundaryMesh.position.set(0, boundaryHeight / 2, 0); // Center the boundary box
-  scene.add(boundaryMesh);
-
-  // Optional: Add semi-transparent walls for better visibility
-  const wallMaterial = new THREE.MeshBasicMaterial({
-    color: 0xff0000,
-    transparent: true,
-    opacity: 0.1,
-    side: THREE.DoubleSide,
-  });
-
-  const walls = [
-    { size: [boundarySize * 2, boundaryHeight * 2], position: [0, boundaryHeight / 2, -boundarySize] }, // Back
-    { size: [boundarySize * 2, boundaryHeight * 2], position: [0, boundaryHeight / 2, boundarySize] }, // Front
-    { size: [boundaryHeight * 2, boundaryHeight * 2], position: [-boundarySize, boundaryHeight / 2, 0], rotation: [0, Math.PI / 2, 0] }, // Left
-    { size: [boundaryHeight * 2, boundaryHeight * 2], position: [boundarySize, boundaryHeight / 2, 0], rotation: [0, -Math.PI / 2, 0] }, // Right
-  ];
-
-  walls.forEach(({ size, position, rotation }) => {
-    const [width, height] = size;
-    const wallGeometry = new THREE.PlaneGeometry(width, height);
-    const wallMesh = new THREE.Mesh(wallGeometry, wallMaterial);
-
-    wallMesh.position.set(...position);
-    if (rotation) {
-      wallMesh.rotation.set(...rotation);
-    }
-
-    scene.add(wallMesh);
-  });
-}
-
-// Call the function to add visible boundaries
-// createVisibleBoundaries();
 
 
 // Obstacle setup with physics for Cannon.js
@@ -491,7 +562,7 @@ const healthBars = [];
 for (let i = 0; i < 1; i++) {
   // Create the visual obstacle mesh in Three.js
   const obstacle = new THREE.Mesh(obstacleGeometry, obstacleMaterial);
-  obstacle.position.set((Math.random() - 0.5) * 100, 1, (Math.random() - 0.5) * 100);
+  obstacle.position.set((Math.random() - 0.5) * 100, 0, (Math.random() - 0.5) * 100);
   obstacle.castShadow = true; // Cast shadows
   obstacle.receiveShadow = true; // Receive shadows
   scene.add(obstacle);
@@ -794,27 +865,38 @@ function updateProjectiles() {
 function animate() {
   if (!isGameStarted) return; // Stop the game loop if the game has ended
 
-
-
-
   requestAnimationFrame(animate);
-  world.step(1 / 60);
+
+  try {
+    world.step(1 / 60);
+
+    // Debug to catch undefined body issues
+    world.bodies.forEach((body, index) => {
+      if (!body) {
+        console.warn(`Undefined body found at index ${index}`);
+      }
+    });
+
+  } catch (err) {
+    console.error('Physics simulation error:', err);
+  }
 
   updateProjectiles();
+
   let direction = new THREE.Vector3();
   if (moveForward) direction.z -= playerSpeed;
   if (moveBackward) direction.z += playerSpeed;
   if (moveLeft) direction.x -= playerSpeed;
   if (moveRight) direction.x += playerSpeed;
+
   direction.applyQuaternion(playerMesh.quaternion);
   playerMesh.position.add(direction);
-  
+
   keepPlayerWithinBounds();
+
   if (isFlying) {
     if (flyUp) playerMesh.position.y += flyingSpeed;
     if (flyDown) playerMesh.position.y -= flyingSpeed;
-
-    // Prevent the insect from flying below the ground level
     playerMesh.position.y = Math.max(playerMesh.position.y, groundLevel);
   } else {
     // Handle gravity and jumping for non-flying players
@@ -834,6 +916,7 @@ function animate() {
   socket.emit('move', { position: playerMesh.position, isFlying });
   renderer.render(scene, camera);
 }
+
 
 
 socket.on('shoot', (data) => {
