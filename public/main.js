@@ -123,13 +123,22 @@ socket.on('lobbyUpdate', (data) => {
 // Ensure lobbyScreen is selected correctly
 
 // Transition to game when it starts
+const gameMusic = document.getElementById('gameMusic');
+
+// Play music when the game starts
 socket.on('gameStart', (data) => {
   const { players } = data;
 
   console.log("Game starting event received:", data);
-  isGameStarted = true
+  isGameStarted = true;
+
   // Hide the lobby screen
   lobbyScreen.style.display = 'none';
+
+  // Play background music
+  gameMusic.play().catch((error) => {
+    console.error("Error playing music:", error);
+  });
 
   // Add all players to the game
   players.forEach((player) => {
@@ -142,6 +151,7 @@ socket.on('gameStart', (data) => {
   // Start the game loop
   animate();
 });
+
 
 
 // Additional Three.js and Cannon.js game setup (same as existing code)
@@ -175,8 +185,6 @@ function createPlayerMesh() {
 
 
 
-
-
 // Ground physics body for Cannon.js
 const groundBody = new CANNON.Body({ mass: 0 }); // Static ground
 const groundShape = new CANNON.Plane();
@@ -186,14 +194,6 @@ groundBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
 groundBody.position.set(0, -23, 0)
 world.addBody(groundBody);
 
-
-// const ceilingBody = new CANNON.Body({ mass: 0 }); // Static ground
-// const ceilingShape = new CANNON.Plane();
-// ceilingBody.addShape(ceilingShape);
-// ceilingBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
-// world.addBody(ceilingBody);
-
-// Create a loading message
 
 
 // Create chat container
@@ -333,33 +333,6 @@ loader.load(
 
     // Add the GLTF scene to the Three.js scene
     scene.add(glbScene);
-
-    // // Create a floor plane at y=0
-    // const groundMesh = new THREE.Mesh(
-    //   new THREE.PlaneGeometry(1000, 1000), // Large plane size
-    //   new THREE.MeshStandardMaterial({ color: 0x808080 })
-    // );
-    // groundMesh.rotation.x = -Math.PI / 2; // Rotate to lie flat
-    // groundMesh.position.y = 0;
-    // groundMesh.receiveShadow = true;
-    // groundMesh.visible = false;
-    // scene.add(groundMesh);
-    
-
-
-    // const ceilingMesh = new THREE.Mesh(
-    //   new THREE.PlaneGeometry(1000, 1000), // Large plane size
-    //   new THREE.MeshStandardMaterial({ color: 0x808080 })
-    // );
-    // ceilingMesh.rotation.x = -Math.PI / 2; // Rotate to lie flat
-    // ceilingMesh.position.y = 100;
-    // ceilingMesh.receiveShadow = true;
-    // ceilingMesh.visible = true;
-    // scene.add(ceilingMesh);
-
-    // // Update ground physics body
-    // groundBody.position.set(0, 0, 0);
-    // world.addBody(groundBody);
     
   },
   undefined,
@@ -367,112 +340,6 @@ loader.load(
     console.error('An error occurred while loading the GLTF model:', error);
   }
 );
-
-
-
-
-// loader.load(
-//   'assets/Pop Tarts.glb', // Path to the GLB file
-//   (gltf) => {
-//     gltf.scene.scale.set(25, 25, 25)
-//     const glbScene = gltf.scene;
-//     glbScene.traverse((child) => {
-//       if (child.isMesh) {
-//         child.castShadow = true;
-//         child.receiveShadow = true;
-//       }
-//     });
-//     scene.add(glbScene);
-//   },
-//   (xhr) => {
-//     console.log((xhr.loaded / xhr.total * 100) + '% loaded');
-//   },
-//   (error) => {
-//     console.error('An error happened while loading the .glb file:', error);
-//   }
-// );
-// loader.load(
-//   'assets/Frying Pan.glb', // Path to the GLB file
-//   (gltf) => {
-//     gltf.scene.scale.set(50, 50, 50)
-//     const glbScene = gltf.scene;
-//     glbScene.traverse((child) => {
-//       if (child.isMesh) {
-//         child.castShadow = true;
-//         child.receiveShadow = true;
-//       }
-//     });
-//     scene.add(glbScene);
-//   },
-//   (xhr) => {
-//     console.log((xhr.loaded / xhr.total * 100) + '% loaded');
-//   },
-//   (error) => {
-//     console.error('An error happened while loading the .glb file:', error);
-//   }
-// );
-// loader.load(
-//   'assets/Tea Kettle.glb', // Path to the GLB file
-//   (gltf) => {
-//     gltf.scene.scale.set(50, 50, 50)
-//     const glbScene = gltf.scene;
-//     glbScene.traverse((child) => {
-//       if (child.isMesh) {
-//         child.castShadow = true;
-//         child.receiveShadow = true;
-//       }
-//     });
-//     scene.add(glbScene);
-//   },
-//   (xhr) => {
-//     console.log((xhr.loaded / xhr.total * 100) + '% loaded');
-//   },
-//   (error) => {
-//     console.error('An error happened while loading the .glb file:', error);
-//   }
-// );
-// loader.load(
-//   'assets/Toaster.glb', // Path to the GLB file
-//   (gltf) => {
-//     gltf.scene.scale.set(50, 50, 50)
-//     const glbScene = gltf.scene;
-//     glbScene.traverse((child) => {
-//       if (child.isMesh) {
-//         child.castShadow = true;
-//         child.receiveShadow = true;
-//       }
-//     });
-//     scene.add(glbScene);
-//   },
-//   (xhr) => {
-//     console.log((xhr.loaded / xhr.total * 100) + '% loaded');
-//   },
-//   (error) => {
-//     console.error('An error happened while loading the .glb file:', error);
-//   }
-// );
-// loader.load(
-//   'assets/Kitchen Knives.glb', // Path to the GLB file
-//   (gltf) => {
-//     gltf.scene.scale.set(50, 50, 50)
-//     const glbScene = gltf.scene;
-//     glbScene.traverse((child) => {
-//       if (child.isMesh) {
-//         child.castShadow = true;
-//         child.receiveShadow = true;
-//       }
-//     });
-//     scene.add(glbScene);
-//   },
-//   (xhr) => {
-//     console.log((xhr.loaded / xhr.total * 100) + '% loaded');
-//   },
-//   (error) => {
-//     console.error('An error happened while loading the .glb file:', error);
-//   }
-// );
-
-
 
 
 // Load and replace the cube with the Fly model
@@ -521,16 +388,13 @@ function createGlowEffect(position) {
 
 // Create and add the glow around the power-up
 loader.load(
-  'assets/Pickup Thunder.glb', // Path to the power-up .glb model
+  'assets/Pickup Thunder.glb', // Path to the power-up GLB model
   (gltf) => {
     powerUpMesh = gltf.scene;
     powerUpMesh.scale.set(10, 10, 10); // Adjust size
     powerUpMesh.position.copy(powerUpPosition);
 
-    // Add glow effect
-    const glowEffect = createGlowEffect(powerUpPosition);
-    scene.add(glowEffect);
-
+    // Enable shadows on power-up model
     powerUpMesh.traverse((child) => {
       if (child.isMesh) {
         child.castShadow = true;
@@ -538,15 +402,27 @@ loader.load(
       }
     });
 
+    // Add glow effect around the power-up
+    const glowEffect = createGlowEffect(powerUpPosition);
+    scene.add(glowEffect);
+
     scene.add(powerUpMesh);
+
+    // Play animation if the model has it
     if (gltf.animations && gltf.animations.length > 0) {
       animationMixer = new THREE.AnimationMixer(powerUpMesh);
       const action = animationMixer.clipAction(gltf.animations[0]); // Play the first animation
       action.play();
     }
-    // Optional: Add a light source to enhance the glow
+
+    // Add a small light for the power-up
     const powerUpLight = new THREE.PointLight(0xffcc00, 1, 10);
+    powerUpLight.castShadow = true; // Enable shadows from the light
     powerUpLight.position.copy(powerUpPosition);
+    powerUpLight.shadow.mapSize.width = 512; // Resolution of shadow
+    powerUpLight.shadow.mapSize.height = 512;
+    powerUpLight.shadow.camera.near = 1;
+    powerUpLight.shadow.camera.far = 50;
     scene.add(powerUpLight);
   },
   undefined,
@@ -599,42 +475,54 @@ function animateGlowEffect(glowMesh) {
   const scale = 1 + 0.1 * Math.sin(Date.now() * 0.005); // Pulsating effect
   glowMesh.scale.set(scale, scale, scale);
 }
-// LIGHTS
+// Renderer configuration for shadows
+renderer.shadowMap.enabled = true; // Enable shadows
+renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Use soft shadows for better quality
 
-const hemiLight = new THREE.HemisphereLight( 0x87CEEB, 0xffffff, 1 );
-hemiLight.color.setHSL( 0.6, 1, 0.6 );
-hemiLight.groundColor.setHSL( 0.0001, 1, 0.75 );
-hemiLight.position.set( 0, 50, 0 );
-scene.add( hemiLight );
-
-const hemiLightHelper = new THREE.HemisphereLightHelper( hemiLight, 0 );
-scene.add( hemiLightHelper );
-
-//
-
-const dirLight = new THREE.DirectionalLight( 0xffffff, 3 );
-dirLight.color.setHSL( 0.1, 1, 0.95 );
-dirLight.position.set( - 1, 1.75, 1 );
-dirLight.position.multiplyScalar( 30 );
-scene.add( dirLight );
-
+// Directional light with improved shadow configuration
+const dirLight = new THREE.DirectionalLight(0xffffff, 3);
+dirLight.color.setHSL(0.1, 1, 0.95);
+dirLight.position.set(-1, 1.75, 1).multiplyScalar(30);
 dirLight.castShadow = true;
 
-dirLight.shadow.mapSize.width = 2048;
+// Configure shadow map settings for directional light
+dirLight.shadow.mapSize.width = 2048; // Higher resolution shadow map
 dirLight.shadow.mapSize.height = 2048;
-
-const d = 500;
-
-dirLight.shadow.camera.left = - d;
+const d = 500; // Dimensions of shadow frustum
+dirLight.shadow.camera.left = -d;
 dirLight.shadow.camera.right = d;
 dirLight.shadow.camera.top = d;
-dirLight.shadow.camera.bottom = - d;
+dirLight.shadow.camera.bottom = -d;
+dirLight.shadow.camera.near = 1; // Near plane for shadows
+dirLight.shadow.camera.far = 1000; // Far plane for shadows
+dirLight.shadow.bias = -0.0005; // Bias to reduce shadow acne
+scene.add(dirLight);
 
-dirLight.shadow.camera.far = 3500;
-dirLight.shadow.bias = - 0.0001;
+const dirLightHelper = new THREE.DirectionalLightHelper(dirLight, 10);
+scene.add(dirLightHelper);
 
-const dirLightHelper = new THREE.DirectionalLightHelper( dirLight, 10 );
-scene.add( dirLightHelper );
+// Hemisphere light for ambient lighting
+const hemiLight = new THREE.HemisphereLight(0x87CEEB, 0xffffff, 0.5);
+hemiLight.color.setHSL(0.6, 1, 0.6);
+hemiLight.groundColor.setHSL(0.0001, 1, 0.75);
+hemiLight.position.set(0, 50, 0);
+scene.add(hemiLight);
+
+// Enable shadows on the player mesh
+playerMesh.castShadow = true;
+playerMesh.receiveShadow = true;
+
+// Create a plane for the ground and enable shadows
+const groundGeometry = new THREE.PlaneGeometry(2000, 2000);
+const groundMaterial = new THREE.MeshStandardMaterial({ color: 0x808080 });
+const groundMesh = new THREE.Mesh(groundGeometry, groundMaterial);
+groundMesh.rotation.x = -Math.PI / 2; // Rotate the ground to lie flat
+groundMesh.position.y = -23;
+groundMesh.receiveShadow = true; // Enable shadows
+scene.add(groundMesh);
+
+// Add shadows for obstacles
+
 
 
 // Store other players
@@ -1074,6 +962,10 @@ function endGame() {
   console.log('Game over: All obstacles destroyed!');
   isGameStarted = false;
 
+  // Pause the background music
+  gameMusic.pause();
+  gameMusic.currentTime = 0; // Reset to the beginning
+
   // Display the game end screen
   const gameEndScreen = document.getElementById('gameEndScreen');
   gameEndScreen.classList.remove('hidden'); // Show the end screen
@@ -1093,7 +985,6 @@ function endGame() {
     // Reset any game-specific variables here if needed
   });
 }
-
 
 socket.on('currentPlayers', (players) => {
   Object.keys(players).forEach((id) => {
