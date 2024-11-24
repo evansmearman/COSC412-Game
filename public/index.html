@@ -18,41 +18,32 @@
       },
     };
   </script>
-<script type="importmap">
-  {
-    "imports": {
-      "three": "https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.module.js",
-      "three/examples/jsm/math/Capsule": "https://cdn.jsdelivr.net/npm/three@0.152.2/examples/jsm/math/Capsule.js",
-      "three/examples/jsm/math/Octree": "https://cdn.jsdelivr.net/npm/three@0.152.2/examples/jsm/math/Octree.js",
-      "three/examples/jsm/helpers/OctreeHelper": "https://cdn.jsdelivr.net/npm/three@0.152.2/examples/jsm/helpers/OctreeHelper.js",
-      "three/examples/jsm/loaders/GLTFLoader": "https://cdn.jsdelivr.net/npm/three@0.152.2/examples/jsm/loaders/GLTFLoader.js",
-      "three/examples/jsm/controls/PointerLockControls": "https://cdn.jsdelivr.net/npm/three@0.152.2/examples/jsm/controls/PointerLockControls.js",
-      "cannon-es": "https://cdn.jsdelivr.net/npm/cannon-es@0.18.0/dist/cannon-es.js",
-      "socket.io-client": "https://cdn.jsdelivr.net/npm/socket.io-client@4.5.1/dist/socket.io.esm.min.js",
-      "nanoid": "https://cdn.jsdelivr.net/npm/nanoid@4.0.0/nanoid.js",
-      "lil-gui": "https://cdn.jsdelivr.net/npm/lil-gui@0.18.1/dist/lil-gui.esm.min.js",
-      "ammo.js": "https://cdn.jsdelivr.net/npm/ammo-node@1.0.0/ammo.min.js"
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.module.js",
+        "three/examples/jsm/math/Capsule": "https://cdn.jsdelivr.net/npm/three@0.152.2/examples/jsm/math/Capsule.js",
+        "three/examples/jsm/math/Octree": "https://cdn.jsdelivr.net/npm/three@0.152.2/examples/jsm/math/Octree.js",
+        "three/examples/jsm/helpers/OctreeHelper": "https://cdn.jsdelivr.net/npm/three@0.152.2/examples/jsm/helpers/OctreeHelper.js",
+        "three/examples/jsm/loaders/GLTFLoader": "https://cdn.jsdelivr.net/npm/three@0.152.2/examples/jsm/loaders/GLTFLoader.js",
+        "three/examples/jsm/controls/PointerLockControls": "https://cdn.jsdelivr.net/npm/three@0.152.2/examples/jsm/controls/PointerLockControls.js",
+        "cannon-es": "https://cdn.jsdelivr.net/npm/cannon-es@0.18.0/dist/cannon-es.js",
+        "socket.io-client": "https://cdn.jsdelivr.net/npm/socket.io-client@4.5.1/dist/socket.io.esm.min.js",
+        "nanoid": "https://cdn.jsdelivr.net/npm/nanoid@4.0.0/nanoid.js",
+        "lil-gui": "https://cdn.jsdelivr.net/npm/lil-gui@0.18.1/dist/lil-gui.esm.min.js",
+        "ammo.js": "https://cdn.jsdelivr.net/npm/ammo-node@1.0.0/ammo.min.js"
+      }
     }
-  }
   </script>
-</script>
-
-
-<!-- Ammo.js -->
-<!-- <script src="./ammo.js"></script> -->
 </head>
 <body class="bg-background text-white font-sans">
   <audio id="gameMusic" src="assets/Juhani Junkala [Retro Game Music Pack] Level 1.mp3" loop></audio>
-  <!-- Title Screen --><audio id="backgroundMusic" src="assets/theme1.mp3" loop></audio>
+  <audio id="backgroundMusic" src="assets/theme1.mp3" loop></audio>
 
+  <!-- Title Screen -->
   <div id="titleScreen" class="flex flex-col items-center justify-center h-screen bg-gradient-to-br from-green-900 via-green-800 to-green-700 text-white">
-    <!-- Title -->
     <h1 class="text-5xl font-extrabold mb-6 animate-pulse tracking-wide">🦟 Insect Invasion</h1>
-  
-    <!-- Subtitle -->
     <p class="text-lg mb-6 text-gray-200 italic">Choose your path in the ultimate bug battle!</p>
-  
-    <!-- Name Input -->
     <div class="w-full max-w-sm mb-4">
       <input 
         id="playerNameInput" 
@@ -61,8 +52,6 @@
         class="w-full px-4 py-3 text-black rounded-lg shadow-md focus:ring-4 focus:ring-yellow-400 outline-none"
       />
     </div>
-  
-    <!-- Buttons -->
     <div class="space-x-4">
       <button 
         id="createLobbyButton" 
@@ -77,8 +66,6 @@
         Join Lobby
       </button>
     </div>
-  
-    <!-- Lobby Code Input -->
     <div class="w-full max-w-sm mt-6">
       <input 
         id="lobbyCodeInput" 
@@ -87,43 +74,66 @@
         class="w-full px-4 py-3 text-black rounded-lg shadow-md focus:ring-4 focus:ring-yellow-400 outline-none"
       />
     </div>
-  
-    <!-- Footer -->
     <footer class="absolute bottom-4 text-sm text-gray-300">
       © 2024 Insect Invasion. All rights reserved.
     </footer>
   </div>
 
-  <div id="gameEndScreen" class="hidden fixed inset-0 bg-black bg-opacity-80 flex flex-col items-center justify-center text-white text-center">
-    <p class="text-4xl font-bold mb-8">Game Over! All obstacles have been destroyed.</p>
-    <button id="returnToLobbyButton" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white text-lg font-semibold rounded shadow-lg">
-      Return to Lobby
-    </button>
+  <!-- Map Selection Screen -->
+  <div id="mapSelectionScreen" class="hidden flex flex-col items-center justify-center h-screen bg-gray-900 text-white">
+    <h2 class="text-4xl font-extrabold mb-6">Select a Map</h2>
+    <div class="grid grid-cols-2 gap-4">
+      <div 
+        class="map-option bg-cover bg-center rounded-lg shadow-lg cursor-pointer hover:scale-105 transition transform duration-300"
+        style="background-image: url('assets/TN_Kitchen1.jpg'); width: 200px; height: 200px;"
+        data-map="Map1"
+      >
+        <p class="bg-black bg-opacity-50 text-white text-center p-2 rounded-b-lg">Map 1</p>
+      </div>
+      <div 
+        class="map-option bg-cover bg-center rounded-lg shadow-lg cursor-pointer hover:scale-105 transition transform duration-300"
+        style="background-image: url('assets/apartment.PNG'); width: 200px; height: 200px;"
+        data-map="Map2"
+      >
+        <p class="bg-black bg-opacity-50 text-white text-center p-2 rounded-b-lg">Map 2</p>
+      </div>
+      
+      
+    </div>
+    <div class="flex space-x-4 mt-8">
+      <button 
+        id="backToLobbyButton" 
+        class="px-8 py-3 rounded-lg bg-red-500 hover:bg-red-600 text-white text-lg font-semibold shadow-md transition"
+      >
+        Back to Lobby
+      </button>
+      <button 
+        id="confirmMapButton" 
+        class="px-8 py-3 rounded-lg bg-green-500 hover:bg-green-600 text-white text-lg font-semibold shadow-md transition"
+        disabled
+      >
+        Confirm Map
+      </button>
+    </div>
   </div>
-  
 
   <!-- Lobby Screen -->
   <div id="lobbyScreen" class="hidden flex flex-col items-center justify-center h-screen bg-gray-900 text-white">
-    <!-- Lobby Code Display -->
     <h2 class="text-4xl font-extrabold mb-6">
       Lobby Code: 
       <span id="lobbyCodeDisplay" class="text-green-400">XXXXXX</span>
     </h2>
-  
-    <!-- Player List Section -->
     <div class="w-full max-w-lg bg-gray-800 rounded-md shadow-md p-6">
       <h3 class="text-2xl font-semibold mb-4 text-center">Players in Lobby</h3>
       <ul id="playerList" class="space-y-2">
         <!-- Dynamic Player List -->
       </ul>
     </div>
-  
-    <!-- Buttons -->
     <div class="flex space-x-4 mt-6">
       <button 
         id="startGameButton" 
         class="px-8 py-3 rounded-md bg-green-500 hover:bg-green-600 text-white text-lg font-semibold shadow-md transition"
-        style="display: none;" <!-- Initially hidden -->
+        style="display: none;"
       >
         Start Game
       </button>
@@ -135,8 +145,8 @@
       </button>
     </div>
   </div>
+
   <!-- Game Scripts -->
   <script type="module" src="main.js"></script>
-
 </body>
 </html>
