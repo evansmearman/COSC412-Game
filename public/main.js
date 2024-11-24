@@ -31,7 +31,7 @@ const renderer = new THREE.WebGLRenderer( { antialias: true } );
 			renderer.setPixelRatio( window.devicePixelRatio );
 			renderer.setSize( window.innerWidth, window.innerHeight );
 			renderer.shadowMap.enabled = true;
-			renderer.shadowMap.type = THREE.VSMShadowMap;
+			renderer.shadowMap.type = THREE.PCFSoftShadowMap;;
 			renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
@@ -58,18 +58,17 @@ createLobbyButton.addEventListener('click', () => {
     return;
   }
 
+  // Generate a lobby code and send a request to the server
   lobbyCode = nanoid(6).toUpperCase();
   socket.emit('createLobby', { playerName, lobbyCode });
 
+  // Switch to the lobby screen
   titleScreen.style.display = 'none';
   lobbyScreen.style.display = 'flex';
-
   lobbyCodeDisplay.textContent = lobbyCode;
 
-  // Show "Start Game" button for host only
+  // Host sees the "Start Game" button
   startGameButton.style.display = 'block';
-  createLobbyButton.style.display = 'none';
-  joinLobbyButton.style.display = 'none';
 });
 
 joinLobbyButton.addEventListener('click', () => {
@@ -81,11 +80,12 @@ joinLobbyButton.addEventListener('click', () => {
     return;
   }
 
+  // Send a request to join the lobby
   socket.emit('joinLobby', { playerName, lobbyCode: code });
 
-  // Hide buttons after joining
-  createLobbyButton.style.display = 'none';
-  joinLobbyButton.style.display = 'none';
+  // Switch to the lobby screen
+  titleScreen.style.display = 'none';
+  lobbyScreen.style.display = 'flex';
 });
 
 // Handle starting the game
@@ -95,27 +95,29 @@ startGameButton.addEventListener('click', () => {
 });
 
 // Update lobby UI when a new player joins
-socket.on('lobbyUpdate', (data) => {
-  const { players, host } = data;
-
-  // Update player list
+socket.on('lobbyUpdate', ({ players, host }) => {
+  // Clear the existing player list
   playerList.innerHTML = '';
+
+  // Add each player to the list
   players.forEach((player) => {
     const listItem = document.createElement('li');
-    listItem.textContent = player.name + (player.id === host ? ' (Host)' : '');
+    listItem.className = 'flex items-center justify-between bg-gray-700 p-3 rounded-md';
+    listItem.innerHTML = `
+      <span class="font-medium">${player.name}</span>
+      <span class="text-sm ${player.id === host ? 'text-green-400' : 'text-yellow-400'}">
+        ${player.id === host ? 'Host' : 'Player'}
+      </span>
+    `;
     playerList.appendChild(listItem);
   });
 
-  // Show or hide the "Start Game" button
+  // Show "Start Game" button for the host
   if (socket.id === host) {
     startGameButton.style.display = 'block';
   } else {
     startGameButton.style.display = 'none';
   }
-
-  // Hide lobby creation and joining buttons
-  createLobbyButton.style.display = 'none';
-  joinLobbyButton.style.display = 'none';
 
   console.log('Lobby updated:', players);
 });
@@ -239,6 +241,26 @@ const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
 const playerMesh = new THREE.Mesh(geometry, material);
 scene.background = new THREE.Color(0x87CEEB);
 scene.add(playerMesh);
+
+
+
+const playerRadius = 1; // Approximate size of the player
+const playerBody = new CANNON.Body({
+  mass: 5,
+  shape: new CANNON.Sphere(playerRadius),
+  position: new CANNON.Vec3(0, 2, 0),
+});
+world.addBody(playerBody);
+
+
+
+
+
+
+
+
+
+
 function visualizeTrimesh(trimesh, scene) {
   const geometry = new THREE.BufferGeometry();
 
@@ -284,7 +306,8 @@ loader.load(
     glbScene.traverse((child) => {
       if (child.isMesh) {
         const geometry = child.geometry;
-
+        child.castShadow = true;
+        child.receiveShadow = true;
         if (geometry && geometry.attributes.position) {
           // Extract vertices and indices
           const vertices = Array.from(geometry.attributes.position.array);
@@ -308,7 +331,7 @@ loader.load(
 
           child.updateMatrixWorld(); // Ensure the world matrix is up to date
           child.matrixWorld.decompose(position, quaternion, scale);
-
+       
           // Create the Trimesh
           const trimesh = new CANNON.Trimesh(scaledVertices, indices);
 
@@ -480,7 +503,7 @@ renderer.shadowMap.enabled = true; // Enable shadows
 renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Use soft shadows for better quality
 
 // Directional light with improved shadow configuration
-const dirLight = new THREE.DirectionalLight(0xffffff, 3);
+const dirLight = new THREE.DirectionalLight(0xffffff, 1);
 dirLight.color.setHSL(0.1, 1, 0.95);
 dirLight.position.set(-1, 1.75, 1).multiplyScalar(30);
 dirLight.castShadow = true;
@@ -488,14 +511,14 @@ dirLight.castShadow = true;
 // Configure shadow map settings for directional light
 dirLight.shadow.mapSize.width = 2048; // Higher resolution shadow map
 dirLight.shadow.mapSize.height = 2048;
-const d = 500; // Dimensions of shadow frustum
+const d = 10000; // Dimensions of shadow frustum
 dirLight.shadow.camera.left = -d;
 dirLight.shadow.camera.right = d;
 dirLight.shadow.camera.top = d;
 dirLight.shadow.camera.bottom = -d;
 dirLight.shadow.camera.near = 1; // Near plane for shadows
 dirLight.shadow.camera.far = 1000; // Far plane for shadows
-dirLight.shadow.bias = -0.0005; // Bias to reduce shadow acne
+dirLight.shadow.bias = -0.0009; // Bias to reduce shadow acne
 scene.add(dirLight);
 
 const dirLightHelper = new THREE.DirectionalLightHelper(dirLight, 10);
@@ -536,8 +559,7 @@ playerMesh.receiveShadow = true; // Receive shadows
 playerMesh.add(camera); // Attach camera to player mesh
 
 
-const ceilingHeight = 0
-const ceilingMesh = new THREE.PlaneGeometry(750, ) 
+
 
 // Define boundary dimensions
 const boundary = { x: 124, y: 128.5, z: 138.6 };
@@ -688,8 +710,10 @@ function shootSphere() {
   camera.getWorldPosition(startPosition);
   const forwardDirection = new THREE.Vector3();
   camera.getWorldDirection(forwardDirection);
-  sphereMesh.position.copy(startPosition.add(forwardDirection.multiplyScalar(1.5)));
+  sphereMesh.position.copy(startPosition.add(forwardDirection.multiplyScalar(3)));
   console.log(playerMesh.position)
+
+  
   // Cannon.js body for the sphere
   const sphereShape = new CANNON.Sphere(sphereRadius);
   const sphereBody = new CANNON.Body({ mass: sphereMass });
@@ -904,7 +928,7 @@ function animate() {
 
   direction.applyQuaternion(playerMesh.quaternion);
   playerMesh.position.add(direction);
-
+  playerBody.position = playerMesh.position
   keepPlayerWithinBounds();
 
   if (isFlying) {

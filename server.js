@@ -8,7 +8,7 @@ const io = new Server(server);
 
 app.use(express.static('public'));
 
-const LOBBY_SIZE = process.env.LOBBY_SIZE || 2;
+const LOBBY_SIZE = process.env.LOBBY_SIZE || 4;
 
 // Data structures for managing lobbies and players
 let lobbies = {}; // { lobbyCode: { players: [], host: socketId, gameStarted: false } }
@@ -29,10 +29,10 @@ io.on('connection', (socket) => {
             return;
         }
 
-        lobbies[lobbyCode] = { 
-            players: [{ id: socket.id, name: playerName }], 
-            host: socket.id, 
-            gameStarted: false 
+        lobbies[lobbyCode] = {
+            players: [{ id: socket.id, name: playerName }],
+            host: socket.id,
+            gameStarted: false,
         };
         players[socket.id] = {
             name: playerName,
@@ -41,12 +41,21 @@ io.on('connection', (socket) => {
             lobbyCode,
         };
         socket.join(lobbyCode);
+        io.to(lobbyCode).emit('updateLobby', {
+            players: lobbies[lobbyCode].players,
+            host: lobbies[lobbyCode].host,
+        });
         socket.emit('lobbyCreated', { lobbyCode, players: lobbies[lobbyCode].players });
+
         console.log(`Lobby created: ${lobbyCode}`);
     });
 
     // Handle joining a lobby
     socket.on('joinLobby', ({ playerName, lobbyCode }) => {
+        if (!playerName || typeof playerName !== 'string' || playerName.trim().length === 0) {
+            socket.emit('error', 'Invalid player name.');
+            return;
+        }
         if (!lobbies[lobbyCode]) {
             socket.emit('error', 'Lobby not found.');
             return;
@@ -65,11 +74,11 @@ io.on('connection', (socket) => {
         };
         socket.join(lobbyCode);
 
-        io.to(lobbyCode).emit('updateLobby', {
+        io.to(lobbyCode).emit('lobbyUpdate', {
             players: lobbies[lobbyCode].players,
             host: lobbies[lobbyCode].host,
+            lobbyCode: lobbyCode,
         });
-
         socket.emit('lobbyJoined', { lobbyCode, players: lobbies[lobbyCode].players });
 
         console.log(`Player ${playerName} joined lobby: ${lobbyCode}`);
@@ -77,11 +86,12 @@ io.on('connection', (socket) => {
 
     // Handle starting the game
     socket.on('startGame', ({ lobbyCode }) => {
-        if (lobbies[lobbyCode]?.host === socket.id) {
-            lobbies[lobbyCode].gameStarted = true;
+        const lobby = lobbies[lobbyCode];
+        if (lobby && lobby.host === socket.id) {
+            lobby.gameStarted = true;
             assignRoles(lobbyCode);
 
-            const lobbyPlayers = lobbies[lobbyCode].players.map((player) => ({
+            const lobbyPlayers = lobby.players.map((player) => ({
                 id: player.id,
                 name: player.name,
                 role: players[player.id].role,
@@ -143,7 +153,7 @@ io.on('connection', (socket) => {
         io.to(lobbyCode).emit('returnToLobby');
     });
 
-    // Handle disconnection
+    // Handle player disconnection
     socket.on('disconnect', () => {
         console.log(`Player disconnected: ${socket.id}`);
         const player = players[socket.id];
@@ -154,18 +164,19 @@ io.on('connection', (socket) => {
             if (lobby) {
                 lobby.players = lobby.players.filter((p) => p.id !== socket.id);
 
-                if (lobby.host === socket.id && lobby.players.length > 0) {
-                    lobby.host = lobby.players[0].id;
-                    io.to(lobbyCode).emit('updateLobby', {
-                        players: lobby.players,
-                        host: lobby.host,
-                    });
-                    console.log(`New host for lobby ${lobbyCode}: ${lobby.host}`);
-                } else if (lobby.players.length === 0) {
-                    delete lobbies[lobbyCode];
-                } else {
-                    io.to(lobbyCode).emit('updateLobby', { players: lobby.players });
+                if (lobby.host === socket.id) {
+                    if (lobby.players.length > 0) {
+                        lobby.host = lobby.players[0].id;
+                    } else {
+                        delete lobbies[lobbyCode];
+                        console.log(`Lobby ${lobbyCode} deleted.`);
+                    }
                 }
+
+                io.to(lobbyCode).emit('updateLobby', {
+                    players: lobby.players,
+                    host: lobby.host,
+                });
             }
 
             delete players[socket.id];

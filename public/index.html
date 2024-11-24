@@ -43,35 +43,55 @@
 </head>
 <body class="bg-background text-white font-sans">
   <audio id="gameMusic" src="assets/Juhani Junkala [Retro Game Music Pack] Level 1.mp3" loop></audio>
-  <!-- Title Screen -->
-  <div id="titleScreen" class="flex flex-col items-center justify-center h-screen">
-    <h1 class="text-4xl font-bold mb-6">Insect Invasion</h1>
-    <input 
-      id="playerNameInput" 
-      type="text" 
-      placeholder="Enter your name"
-      class="mb-4 px-4 py-2 text-black rounded-md focus:ring-2 focus:ring-button outline-none"
-    />
+  <!-- Title Screen --><audio id="backgroundMusic" src="assets/theme1.mp3" loop></audio>
+
+  <div id="titleScreen" class="flex flex-col items-center justify-center h-screen bg-gradient-to-br from-green-900 via-green-800 to-green-700 text-white">
+    <!-- Title -->
+    <h1 class="text-5xl font-extrabold mb-6 animate-pulse tracking-wide">🦟 Insect Invasion</h1>
+  
+    <!-- Subtitle -->
+    <p class="text-lg mb-6 text-gray-200 italic">Choose your path in the ultimate bug battle!</p>
+  
+    <!-- Name Input -->
+    <div class="w-full max-w-sm mb-4">
+      <input 
+        id="playerNameInput" 
+        type="text" 
+        placeholder="Enter your name"
+        class="w-full px-4 py-3 text-black rounded-lg shadow-md focus:ring-4 focus:ring-yellow-400 outline-none"
+      />
+    </div>
+  
+    <!-- Buttons -->
     <div class="space-x-4">
       <button 
         id="createLobbyButton" 
-        class="px-6 py-2 rounded-md bg-button hover:bg-buttonHover text-black font-medium transition"
+        class="px-8 py-3 rounded-lg bg-yellow-500 hover:bg-yellow-400 text-black font-bold shadow-lg transform transition duration-300 hover:scale-105"
       >
         Create Lobby
       </button>
       <button 
         id="joinLobbyButton" 
-        class="px-6 py-2 rounded-md bg-button hover:bg-buttonHover text-black font-medium transition"
+        class="px-8 py-3 rounded-lg bg-blue-500 hover:bg-blue-400 text-white font-bold shadow-lg transform transition duration-300 hover:scale-105"
       >
         Join Lobby
       </button>
     </div>
-    <input 
-      id="lobbyCodeInput" 
-      type="text" 
-      placeholder="Enter Lobby Code"
-      class="mt-4 px-4 py-2 text-black rounded-md focus:ring-2 focus:ring-button outline-none"
-    />
+  
+    <!-- Lobby Code Input -->
+    <div class="w-full max-w-sm mt-6">
+      <input 
+        id="lobbyCodeInput" 
+        type="text" 
+        placeholder="Enter Lobby Code"
+        class="w-full px-4 py-3 text-black rounded-lg shadow-md focus:ring-4 focus:ring-yellow-400 outline-none"
+      />
+    </div>
+  
+    <!-- Footer -->
+    <footer class="absolute bottom-4 text-sm text-gray-300">
+      © 2024 Insect Invasion. All rights reserved.
+    </footer>
   </div>
 
   <div id="gameEndScreen" class="hidden fixed inset-0 bg-black bg-opacity-80 flex flex-col items-center justify-center text-white text-center">
@@ -83,17 +103,38 @@
   
 
   <!-- Lobby Screen -->
-  <div id="lobbyScreen" class="hidden flex flex-col items-center justify-center h-screen bg-gray-800">
-    <h2 class="text-2xl font-semibold mb-4">Lobby Code: <span id="lobbyCodeDisplay" class="font-bold text-green-400"></span></h2>
-    <ul id="playerList" class="mb-6 text-lg list-disc list-inside space-y-2"></ul>
-    <button 
-      id="startGameButton" 
-      class="hidden px-6 py-2 rounded-md bg-button hover:bg-buttonHover text-black font-medium transition"
-    >
-      Start Game
-    </button>
+  <div id="lobbyScreen" class="hidden flex flex-col items-center justify-center h-screen bg-gray-900 text-white">
+    <!-- Lobby Code Display -->
+    <h2 class="text-4xl font-extrabold mb-6">
+      Lobby Code: 
+      <span id="lobbyCodeDisplay" class="text-green-400">XXXXXX</span>
+    </h2>
+  
+    <!-- Player List Section -->
+    <div class="w-full max-w-lg bg-gray-800 rounded-md shadow-md p-6">
+      <h3 class="text-2xl font-semibold mb-4 text-center">Players in Lobby</h3>
+      <ul id="playerList" class="space-y-2">
+        <!-- Dynamic Player List -->
+      </ul>
+    </div>
+  
+    <!-- Buttons -->
+    <div class="flex space-x-4 mt-6">
+      <button 
+        id="startGameButton" 
+        class="px-8 py-3 rounded-md bg-green-500 hover:bg-green-600 text-white text-lg font-semibold shadow-md transition"
+        style="display: none;" <!-- Initially hidden -->
+      >
+        Start Game
+      </button>
+      <button 
+        id="leaveLobbyButton" 
+        class="px-8 py-3 rounded-md bg-red-500 hover:bg-red-600 text-white text-lg font-semibold shadow-md transition"
+      >
+        Leave Lobby
+      </button>
+    </div>
   </div>
-
   <!-- Game Scripts -->
   <script type="module" src="main.js"></script>
 
