@@ -255,12 +255,6 @@ world.addBody(playerBody);
 
 
 
-
-
-
-
-
-
 function visualizeTrimesh(trimesh, scene) {
   const geometry = new THREE.BufferGeometry();
 
@@ -713,7 +707,7 @@ function shootSphere() {
   sphereMesh.position.copy(startPosition.add(forwardDirection.multiplyScalar(3)));
   console.log(playerMesh.position)
 
-  
+
   // Cannon.js body for the sphere
   const sphereShape = new CANNON.Sphere(sphereRadius);
   const sphereBody = new CANNON.Body({ mass: sphereMass });
