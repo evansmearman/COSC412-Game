@@ -134,106 +134,107 @@
   });
 
 
-function loadMap(map) {
-  return new Promise((resolve, reject) => {
-    const path =
-      map === "Map1"
-        ? "assets/lowPolyKitchenWhole.glb"
-        : map === "Map2"
-        ? "assets/Apartment 2.glb"
-        : null;
-
-    if (!path) {
-      reject(`Invalid map selected: ${map}`);
-      return;
-    }
-
-    console.log(`Loading map: ${map} from path: ${path}`);
-
-    const scaleFactor = map === "Map1" ? 1 : 500;
-    const positionY = map === "Map1" ? 0 : 50;
-
-    const loader = new GLTFLoader();
-    loader.load(
-      path,
-      (gltf) => {
-        const glbScene = gltf.scene;
-
-        // Set scale and position
-        glbScene.scale.set(scaleFactor, scaleFactor, scaleFactor);
-        glbScene.position.y = positionY;
-
-        // Compute and log the bounding box
-        const boundingBox = new THREE.Box3().setFromObject(glbScene);
-        console.log('Bounding Box:', boundingBox.min, boundingBox.max);
-
-        // Add bounding box helper for debugging
-        const boxHelper = new THREE.Box3Helper(boundingBox, 0xff0000);
-        scene.add(boxHelper);
-
-        // Traverse the GLTF scene for physics bodies
-        glbScene.traverse((child) => {
-          if (child.isMesh) {
-            child.castShadow = true;
-            child.receiveShadow = true;
-
-            const geometry = child.geometry;
-            if (geometry && geometry.attributes.position) {
-              // Extract vertices and indices for Trimesh
-              const vertices = Array.from(geometry.attributes.position.array);
-              const indices = geometry.index
-                ? Array.from(geometry.index.array)
-                : undefined;
-
-              // Scale vertices for Trimesh
-              const scaledVertices = vertices.map((v, i) =>
-                i % 3 === 1 ? v * scaleFactor : v * scaleFactor
-              );
-
-              // Apply world transformation
-              const position = new THREE.Vector3();
-              const quaternion = new THREE.Quaternion();
-              const scale = new THREE.Vector3();
-              child.updateMatrixWorld();
-              child.matrixWorld.decompose(position, quaternion, scale);
-
-              // Create the Trimesh and physics body
-              const trimesh = new CANNON.Trimesh(scaledVertices, indices);
-              const body = new CANNON.Body({
-                mass: 0, // Static object
-                shape: trimesh,
-              });
-
-              // Position and rotate the body
-              body.position.set(position.x, position.y, position.z);
-              body.quaternion.set(
-                quaternion.x,
-                quaternion.y,
-                quaternion.z,
-                quaternion.w
-              );
-
-              // Add to the physics world
-              world.addBody(body);
-
-              // Optional visualization
-              visualizeTrimesh(trimesh, scene);
-            }
-          }
-        });
-
-        // Add GLTF scene to Three.js scene
-        scene.add(glbScene);
-        console.log(`Map "${map}" loaded successfully.`);
-        resolve(); // Resolve after the map is fully loaded
-      },
-      undefined, // Optional: progress callback
-      (error) => {
-        reject(error); // Reject on error
+  function loadMap(map) {
+    return new Promise((resolve, reject) => {
+      const path =
+        map === "Map1"
+          ? "assets/lowPolyKitchenWhole.glb"
+          : map === "Map2"
+          ? "assets/Apartment 2.glb"
+          : null;
+  
+      if (!path) {
+        reject(`Invalid map selected: ${map}`);
+        return;
       }
-    );
-  });
-}
+  
+      console.log(`Loading map: ${map} from path: ${path}`);
+  
+      const scaleFactor = map === "Map1" ? 1 : 500;
+      const positionY = map === "Map1" ? 0 : 50;
+  
+      const loader = new GLTFLoader();
+      loader.load(
+        path,
+        (gltf) => {
+          const glbScene = gltf.scene;
+  
+          // Set scale and position
+          glbScene.scale.set(scaleFactor, scaleFactor, scaleFactor);
+          glbScene.position.y = positionY;
+  
+          // Compute and log the bounding box
+          const boundingBox = new THREE.Box3().setFromObject(glbScene);
+          console.log("Bounding Box:", boundingBox.min, boundingBox.max);
+  
+          // Add bounding box helper for debugging
+          const boxHelper = new THREE.Box3Helper(boundingBox, 0xff0000);
+          scene.add(boxHelper);
+  
+          // Traverse the GLTF scene for physics bodies
+          glbScene.traverse((child) => {
+            if (child.isMesh) {
+              child.castShadow = true;
+              child.receiveShadow = true;
+  
+              const geometry = child.geometry;
+              if (geometry && geometry.attributes.position) {
+                // Extract vertices and indices for Trimesh
+                const vertices = Array.from(geometry.attributes.position.array);
+                const indices = geometry.index
+                  ? Array.from(geometry.index.array)
+                  : undefined;
+  
+                // Scale vertices for Trimesh
+                const scaledVertices = vertices.map((v, i) =>
+                  i % 3 === 1 ? v * scaleFactor : v * scaleFactor
+                );
+  
+                // Apply world transformation
+                const position = new THREE.Vector3();
+                const quaternion = new THREE.Quaternion();
+                const scale = new THREE.Vector3();
+                child.updateMatrixWorld();
+                child.matrixWorld.decompose(position, quaternion, scale);
+  
+                // Create the Trimesh and physics body
+                const trimesh = new CANNON.Trimesh(scaledVertices, indices);
+                const body = new CANNON.Body({
+                  mass: 0, // Static object
+                  shape: trimesh,
+                });
+  
+                // Position and rotate the body
+                body.position.set(position.x, position.y, position.z);
+                body.quaternion.set(
+                  quaternion.x,
+                  quaternion.y,
+                  quaternion.z,
+                  quaternion.w
+                );
+  
+                // Add to the physics world
+                world.addBody(body);
+  
+                // Optional visualization
+                visualizeTrimesh(trimesh, scene, map);
+              }
+            }
+          });
+  
+          // Add GLTF scene to Three.js scene
+          scene.add(glbScene);
+          console.log(`Map "${map}" loaded successfully.`);
+          resolve(); // Resolve after the map is fully loaded
+        },
+        undefined, // Optional: progress callback
+        (error) => {
+          reject(error); // Reject on error
+        }
+      );
+    });
+  }
+  
   // Handle starting the game
   startGameButton.addEventListener('click', () => {
     console.log("hit")
@@ -403,19 +404,26 @@ function loadMap(map) {
 
 
 
-  function visualizeTrimesh(trimesh, scene) {
+  function visualizeTrimesh(trimesh, scene, map) {
     // Convert the Cannon.js trimesh vertices and indices into a Three.js geometry
     const geometry = new THREE.BufferGeometry();
     const vertices = new Float32Array(trimesh.vertices);
     const indices = new Uint16Array(trimesh.indices);
   
-    geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+    // Determine offset based on the map
+    const offsetY = map === "Map1" ? 0 : 50;
+  
+    geometry.setAttribute("position", new THREE.BufferAttribute(vertices, 3));
     geometry.setIndex(new THREE.BufferAttribute(indices, 1));
   
     // Create a wireframe for visualization
     const material = new THREE.LineBasicMaterial({ color: 0xff0000 });
     const wireframe = new THREE.LineSegments(new THREE.EdgesGeometry(geometry), material);
-    wireframe.position.y += 0;
+  
+    // Apply the offset
+    wireframe.position.y += offsetY;
+  
+    // Add wireframe to the scene
     scene.add(wireframe);
   
     // Add physics collision body for the wireframe
@@ -433,10 +441,12 @@ function loadMap(map) {
       wireframe.quaternion.w
     );
   
+    // Add the physics body to the Cannon.js world
     world.addBody(physicsBody);
   
     return wireframe;
   }
+  
   // Variable to control the Y offset of the bounding box
   let boundingYOffset = 0; // Default offset is 0
 
