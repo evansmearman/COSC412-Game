@@ -346,42 +346,48 @@
   world.addBody(groundBody);
 
 
+// Create chat container
+const chatContainer = document.createElement('div');
+chatContainer.style.position = 'fixed';
+chatContainer.style.bottom = '20px';
+chatContainer.style.left = '20px';
+chatContainer.style.width = '320px';
+chatContainer.style.height = '240px';
+chatContainer.style.backgroundColor = 'rgba(20, 20, 20, 0.9)'; // Darker and less transparent
+chatContainer.style.borderRadius = '8px'; // Rounded corners
+chatContainer.style.border = '2px solid #444'; // Softer border color
+chatContainer.style.overflowY = 'auto'; // Improved scrolling
+chatContainer.style.padding = '15px';
+chatContainer.style.color = '#f0f0f0'; // Softer white text
+chatContainer.style.fontSize = '14px';
+chatContainer.style.display = 'flex';
+chatContainer.style.flexDirection = 'column';
+chatContainer.style.boxShadow = '0 4px 10px rgba(0, 0, 0, 0.5)'; // Subtle shadow
+chatContainer.style.transition = 'opacity 0.3s ease, transform 0.3s ease'; // Smooth opacity and scale transitions
+chatContainer.style.transform = 'scale(0.95)'; // Slightly smaller when idle
+chatContainer.style.opacity = '0.3'; // Initially transparent
+document.body.appendChild(chatContainer);
 
-  // Create chat container
-  const chatContainer = document.createElement('div');
-  chatContainer.style.position = 'absolute';
-  chatContainer.style.bottom = '10px';
-  chatContainer.style.left = '10px';
-  chatContainer.style.width = '300px';
-  chatContainer.style.height = '200px';
-  chatContainer.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
-  chatContainer.style.border = '1px solid white';
-  chatContainer.style.overflowY = 'scroll';
-  chatContainer.style.padding = '10px';
-  chatContainer.style.color = 'white';
-  chatContainer.style.fontSize = '14px';
-  chatContainer.style.display = 'flex';
-  chatContainer.style.flexDirection = 'column';
-  chatContainer.style.opacity = '0.3'; // Initially transparent
-  chatContainer.style.transition = 'opacity 0.3s ease'; // Smooth transition for opacity
-  document.body.appendChild(chatContainer);
-
-  // Create chat input box
-  const chatInput = document.createElement('input');
-  chatInput.style.position = 'absolute';
-  chatInput.style.bottom = '10px';
-  chatInput.style.left = '10px';
-  chatInput.style.width = '300px';
-  chatInput.style.padding = '5px';
-  chatInput.style.backgroundColor = 'white';
-  chatInput.style.color = 'black';
-  chatInput.style.border = '1px solid black';
-  chatInput.style.opacity = '0.3'; // Initially transparent
-  chatInput.style.transition = 'opacity 0.3s ease'; // Smooth transition for opacity
-  chatInput.placeholder = 'Press Enter to chat...';
-  document.body.appendChild(chatInput);
-
-
+// Create chat input box
+const chatInput = document.createElement('input');
+chatInput.style.position = 'fixed';
+chatInput.style.bottom = '20px';
+chatInput.style.left = '20px';
+chatInput.style.width = '320px';
+chatInput.style.height = '40px';
+chatInput.style.padding = '10px';
+chatInput.style.backgroundColor = '#222'; // Dark background
+chatInput.style.color = '#f0f0f0'; // Softer white text
+chatInput.style.border = '2px solid #444'; // Softer border color
+chatInput.style.borderRadius = '8px'; // Rounded corners
+chatInput.style.outline = 'none'; // Remove default outline
+chatInput.style.fontSize = '16px';
+chatInput.style.boxShadow = '0 2px 5px rgba(0, 0, 0, 0.3)'; // Subtle shadow
+chatInput.style.transition = 'opacity 0.3s ease, transform 0.3s ease'; // Smooth transitions
+chatInput.style.transform = 'scale(0.95)'; // Slightly smaller when idle
+chatInput.style.opacity = '0.3'; // Initially transparent
+chatInput.placeholder = 'Type your message here...';
+document.body.appendChild(chatInput);
 
 
   // Geometry and materials for player
@@ -1312,17 +1318,21 @@ world.addBody(playerBody);
   if (chatInput && chatContainer) {
     chatInput.addEventListener('focus', () => {
       chatContainer.style.opacity = '1';
+      chatContainer.style.transform = 'scale(1)';
       chatInput.style.opacity = '1';
+      chatInput.style.transform = 'scale(1)';
     });
   }
-  // Make chat transparent when input loses focus
-  chatInput.addEventListener('blur', () => {
-    if (chatInput.value.trim() === '') {
-      chatContainer.style.opacity = '0.3';
-      chatInput.style.opacity = '0.3';
-    }
-  });
+  // Focus and blur animations
 
+chatInput.addEventListener('blur', () => {
+  if (chatInput.value.trim() === '') {
+    chatContainer.style.opacity = '0.3';
+    chatContainer.style.transform = 'scale(0.95)';
+    chatInput.style.opacity = '0.3';
+    chatInput.style.transform = 'scale(0.95)';
+  }
+});
   // Listen for 'Enter' to focus the input field
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Enter' && document.activeElement !== chatInput) {
