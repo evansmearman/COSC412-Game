@@ -33,6 +33,7 @@ io.on('connection', (socket) => {
             players: [{ id: socket.id, name: playerName }],
             host: socket.id,
             gameStarted: false,
+            mapSelected: null,
         };
         players[socket.id] = {
             name: playerName,
@@ -97,13 +98,39 @@ io.on('connection', (socket) => {
                 role: players[player.id].role,
             }));
 
-            io.to(lobbyCode).emit('gameStart', { players: lobbyPlayers });
-            console.log(`Game started in lobby: ${lobbyCode}`);
+            io.to(lobbyCode).emit('gameStart', {
+                players: lobbyPlayers,
+                map: lobby.selectedMap, // Include selected map in game start
+            });
+            console.log(`Game started in lobby: ${lobbyCode} with map "${lobby.selectedMap}"`);
         } else {
             socket.emit('error', 'Only the host can start the game.');
         }
     });
 
+    socket.on('mapSelected', ({ lobbyCode, map }) => {
+        const lobby = lobbies[lobbyCode];
+    
+        // Verify that the lobby exists
+        if (!lobby) {
+            socket.emit('error', 'Lobby does not exist.');
+            return;
+        }
+    
+        // Verify that the player is the host
+        if (lobby.host !== socket.id) {
+            socket.emit('error', 'Only the host can select the map.');
+            return;
+        }
+    
+        // Update the selected map for the lobby
+        lobby.selectedMap = map;
+    
+        // Notify all players in the lobby about the selected map
+        io.to(lobbyCode).emit('mapSelected', { map });
+    
+        console.log(`Map "${map}" selected for lobby "${lobbyCode}" by host ${socket.id}`);
+    });
     // Handle player movement
     socket.on('move', (data) => {
         const player = players[socket.id];
@@ -152,7 +179,39 @@ io.on('connection', (socket) => {
         resetLobbyState(lobbyCode);
         io.to(lobbyCode).emit('returnToLobby');
     });
+    socket.on('backToLobby', ({lobbyCode}) =>{
+        console.log("removing")
+        delete lobbies[lobbyCode]
+        
+    })
+    socket.on('leaveLobby', (lobbyCode) =>{
+        console.log(`Player disconnected: ${socket.id}`);
+        const player = players[socket.id];
+        if (player) {
+             lobbyCode = player;
+            const lobby = lobbies[lobbyCode];
 
+            if (lobby) {
+                lobby.players = lobby.players.filter((p) => p.id !== socket.id);
+
+                if (lobby.host === socket.id) {
+                    if (lobby.players.length > 0) {
+                        lobby.host = lobby.players[0].id;
+                    } else {
+                        delete lobbies[lobbyCode];
+                        console.log(`Lobby ${lobbyCode} deleted.`);
+                    }
+                }
+
+                io.to(lobbyCode).emit('updateLobby', {
+                    players: lobby.players,
+                    host: lobby.host,
+                });
+            }
+
+            delete players[socket.id];
+        }
+    })
     // Handle player disconnection
     socket.on('disconnect', () => {
         console.log(`Player disconnected: ${socket.id}`);

@@ -17,7 +17,12 @@
   const lobbyCodeDisplay = document.getElementById('lobbyCodeDisplay');
   const playerList = document.getElementById('playerList');
   const startGameButton = document.getElementById('startGameButton');
-
+  const mapSelectionScreen = document.getElementById('mapSelectionScreen');
+  const backToLobbyButton = document.getElementById('backToLobbyButton');
+  const confirmMapButton = document.getElementById('confirmMapButton');
+  const leaveLobbyButton = document.getElementById('leaveLobbyButton');
+  let selectedMap = '';
+  let finalMap = ''
   // Game variables
   let lobbyCode = '';
   let playersInLobby = [];
@@ -57,20 +62,46 @@
       alert('Please enter your name.');
       return;
     }
-
+  
     // Generate a lobby code and send a request to the server
     lobbyCode = nanoid(6).toUpperCase();
     socket.emit('createLobby', { playerName, lobbyCode });
-
-    // Switch to the lobby screen
+  
+    // Switch to the map selection screen
     titleScreen.style.display = 'none';
-    lobbyScreen.style.display = 'flex';
-    lobbyCodeDisplay.textContent = lobbyCode;
-
-    // Host sees the "Start Game" button
-    startGameButton.style.display = 'block';
+    mapSelectionScreen.classList.remove('hidden');
+    mapSelectionScreen.classList.add('flex');
+  });
+  
+  // Handle back to lobby button
+  backToLobbyButton.addEventListener('click', () => {
+    mapSelectionScreen.classList.add('hidden');
+    titleScreen.style.display = 'flex';
+    socket.emit('backToLobby', lobbyCode );
   });
 
+  leaveLobbyButton.addEventListener('click', () =>{
+    socket.emit('leaveLobby', lobbyCode )
+    lobbyScreen.style.display = "none"
+    titleScreen.style.display = "flex"
+  })
+
+  
+  document.querySelectorAll('.map-option').forEach((mapOption) => {
+    mapOption.addEventListener('click', () => {
+      document.querySelectorAll('.map-option').forEach((option) => {
+        option.classList.remove('border-4', 'border-green-500');
+      });
+      mapOption.classList.add('border-4', 'border-green-500');
+      selectedMap = mapOption.dataset.map;
+  
+      // Enable confirm button
+      confirmMapButton.disabled = false;
+  
+      // Display feedback
+      console.log(`Selected map: ${selectedMap}`);
+    });
+  });
   joinLobbyButton.addEventListener('click', () => {
     const playerName = playerNameInput.value.trim();
     const code = lobbyCodeInput.value.trim().toUpperCase();
@@ -88,6 +119,121 @@
     lobbyScreen.style.display = 'flex';
   });
 
+
+  confirmMapButton.addEventListener('click', ()=>{
+    socket.emit('mapSelected', { lobbyCode, map: selectedMap });   
+    mapSelectionScreen.style.display = "none"
+    lobbyScreen.style.display = "flex"
+    lobbyCodeDisplay.textContent = lobbyCode;
+
+    })
+    socket.on('mapSelected',({map})=>{
+      finalMap = map
+      console.log("Map selection complete")
+      console.log(map)
+  });
+
+
+function loadMap(map) {
+  return new Promise((resolve, reject) => {
+    const path =
+      map === "Map1"
+        ? "assets/lowPolyKitchenWhole.glb"
+        : map === "Map2"
+        ? "assets/Apartment 2.glb"
+        : null;
+
+    if (!path) {
+      reject(`Invalid map selected: ${map}`);
+      return;
+    }
+
+    console.log(`Loading map: ${map} from path: ${path}`);
+
+    const scaleFactor = map === "Map1" ? 1 : 500;
+    const positionY = map === "Map1" ? 0 : 50;
+
+    const loader = new GLTFLoader();
+    loader.load(
+      path,
+      (gltf) => {
+        const glbScene = gltf.scene;
+
+        // Set scale and position
+        glbScene.scale.set(scaleFactor, scaleFactor, scaleFactor);
+        glbScene.position.y = positionY;
+
+        // Compute and log the bounding box
+        const boundingBox = new THREE.Box3().setFromObject(glbScene);
+        console.log('Bounding Box:', boundingBox.min, boundingBox.max);
+
+        // Add bounding box helper for debugging
+        const boxHelper = new THREE.Box3Helper(boundingBox, 0xff0000);
+        scene.add(boxHelper);
+
+        // Traverse the GLTF scene for physics bodies
+        glbScene.traverse((child) => {
+          if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+
+            const geometry = child.geometry;
+            if (geometry && geometry.attributes.position) {
+              // Extract vertices and indices for Trimesh
+              const vertices = Array.from(geometry.attributes.position.array);
+              const indices = geometry.index
+                ? Array.from(geometry.index.array)
+                : undefined;
+
+              // Scale vertices for Trimesh
+              const scaledVertices = vertices.map((v, i) =>
+                i % 3 === 1 ? v * scaleFactor : v * scaleFactor
+              );
+
+              // Apply world transformation
+              const position = new THREE.Vector3();
+              const quaternion = new THREE.Quaternion();
+              const scale = new THREE.Vector3();
+              child.updateMatrixWorld();
+              child.matrixWorld.decompose(position, quaternion, scale);
+
+              // Create the Trimesh and physics body
+              const trimesh = new CANNON.Trimesh(scaledVertices, indices);
+              const body = new CANNON.Body({
+                mass: 0, // Static object
+                shape: trimesh,
+              });
+
+              // Position and rotate the body
+              body.position.set(position.x, position.y, position.z);
+              body.quaternion.set(
+                quaternion.x,
+                quaternion.y,
+                quaternion.z,
+                quaternion.w
+              );
+
+              // Add to the physics world
+              world.addBody(body);
+
+              // Optional visualization
+              visualizeTrimesh(trimesh, scene);
+            }
+          }
+        });
+
+        // Add GLTF scene to Three.js scene
+        scene.add(glbScene);
+        console.log(`Map "${map}" loaded successfully.`);
+        resolve(); // Resolve after the map is fully loaded
+      },
+      undefined, // Optional: progress callback
+      (error) => {
+        reject(error); // Reject on error
+      }
+    );
+  });
+}
   // Handle starting the game
   startGameButton.addEventListener('click', () => {
     console.log("hit")
@@ -129,12 +275,14 @@
 
   // Play music when the game starts
   socket.on('gameStart', (data) => {
-    const { players } = data;
+    const { players, map } = data;
 
     console.log("Game starting event received:", data);
     isGameStarted = true;
-
-    // Hide the lobby screen
+ // Load the selected map
+ loadMap(map).then(() => {
+  console.log(`Map "${map}" loaded successfully.`);   
+  }) // Hide the lobby screen
     lobbyScreen.style.display = 'none';
 
     // Play background music
@@ -292,98 +440,9 @@
   // Variable to control the Y offset of the bounding box
   let boundingYOffset = 0; // Default offset is 0
 
-  // Function to load GLTF model and adjust based on bounding box
-  // Load the GLTF model and center the scene at y=0
-  const loader = new GLTFLoader();
-  loader.load(
-    'assets/lowPolyKitchenWhole.glb', // Path to the GLB file
-    (gltf) => {
-      const glbScene = gltf.scene;
 
-      // Scale the scene
-      const scaleFactor = 1;
-      glbScene.scale.set(scaleFactor, scaleFactor, scaleFactor);
-      glbScene.position.y = 0;
+const loader = new GLTFLoader();
 
-      // Compute the bounding box
-      const boundingBox = new THREE.Box3().setFromObject(glbScene);
-
-      // Create a wireframe box to represent the bounding box
-      const boxHelper = new THREE.Box3Helper(boundingBox, 0xff0000); // Red color
-      scene.add(boxHelper); // Add the bounding box to the scene
-
-      // Print bounding box dimensions for debugging (optional)
-      console.log('Bounding Box:', boundingBox.min, boundingBox.max);
-
-      const sceneBottomY = boundingBox.min.y; // Bottom of the scene
-
-      // Traverse the scene for physics bodies
-      glbScene.traverse((child) => {
-        if (child.isMesh) {
-          const geometry = child.geometry;
-          child.castShadow = true;
-          child.receiveShadow = true;
-
-          if (geometry && geometry.attributes.position) {
-            // Extract vertices and indices
-            const vertices = Array.from(geometry.attributes.position.array);
-            const indices = geometry.index ? Array.from(geometry.index.array) : undefined;
-
-            // Scale vertices for Trimesh
-            const scaledVertices = [];
-            for (let i = 0; i < vertices.length; i += 3) {
-              scaledVertices.push(
-                vertices[i] * scaleFactor,
-                vertices[i + 1] * scaleFactor,
-                vertices[i + 2] * scaleFactor
-              );
-            }
-
-            // Apply world transformation to vertices
-            const position = new THREE.Vector3();
-            const quaternion = new THREE.Quaternion();
-            const scale = new THREE.Vector3();
-            // position.y += 50;
-
-            child.updateMatrixWorld(); // Ensure the world matrix is up to date
-            child.matrixWorld.decompose(position, quaternion, scale);
-
-            // Create the Trimesh
-            const trimesh = new CANNON.Trimesh(scaledVertices, indices);
-
-            // Create a physics body
-            const body = new CANNON.Body({
-              mass: 0, // Static object
-              shape: trimesh,
-            });
-
-            // Position and rotate the body to match the object
-            body.position.set(position.x, position.y, position.z);
-            body.quaternion.set(quaternion.x, quaternion.y, quaternion.z, quaternion.w);
-
-            // Visualize the trimesh (optional)
-            visualizeTrimesh(trimesh, scene);
-
-            // Add the body to the physics world
-            world.addBody(body);
-          }
-        }
-      });
-
-      // Add the GLTF scene to the Three.js scene
-      scene.add(glbScene);
-      // generateWallsFromVertices(glbScene);
-
-    },
-    undefined,
-    (error) => {
-      console.error('An error occurred while loading the GLTF model:', error);
-    }
-  );
-
-
-
-  
   
   loader.load(
     'assets/CharacterFly.glb', // Path to your .glb/.gltf file
