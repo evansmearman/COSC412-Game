@@ -145,7 +145,63 @@
       </button>
     </div>
   </div>
+<!-- Sign-Up Screen -->
+<div id="signUpScreen" class="flex flex-col items-center justify-center h-screen bg-gray-900 text-white hidden">
+  <h2 class="text-4xl font-extrabold mb-6">Sign Up</h2>
+  <div class="w-full max-w-sm space-y-4">
+    <input 
+      id="signUpEmail" 
+      type="email" 
+      placeholder="Enter your email" 
+      class="w-full px-4 py-3 text-black rounded-lg shadow-md focus:ring-4 focus:ring-green-400 outline-none"
+    />
+    <input 
+      id="signUpPassword" 
+      type="password" 
+      placeholder="Enter your password" 
+      class="w-full px-4 py-3 text-black rounded-lg shadow-md focus:ring-4 focus:ring-green-400 outline-none"
+    />
+    <button 
+      id="signUpButton" 
+      class="w-full px-8 py-3 rounded-lg bg-green-500 hover:bg-green-600 text-white font-bold shadow-lg transition"
+    >
+      Sign Up
+    </button>
+    <p class="text-sm text-gray-300">
+      Already have an account? 
+      <span id="goToSignIn" class="text-blue-400 cursor-pointer">Sign In</span>
+    </p>
+  </div>
+</div>
 
+<!-- Sign-In Screen -->
+<div id="signInScreen" class="flex flex-col items-center justify-center h-screen bg-gray-900 text-white hidden">
+  <h2 class="text-4xl font-extrabold mb-6">Sign In</h2>
+  <div class="w-full max-w-sm space-y-4">
+    <input 
+      id="signInEmail" 
+      type="email" 
+      placeholder="Enter your email" 
+      class="w-full px-4 py-3 text-black rounded-lg shadow-md focus:ring-4 focus:ring-blue-400 outline-none"
+    />
+    <input 
+      id="signInPassword" 
+      type="password" 
+      placeholder="Enter your password" 
+      class="w-full px-4 py-3 text-black rounded-lg shadow-md focus:ring-4 focus:ring-blue-400 outline-none"
+    />
+    <button 
+      id="signInButton" 
+      class="w-full px-8 py-3 rounded-lg bg-blue-500 hover:bg-blue-600 text-white font-bold shadow-lg transition"
+    >
+      Sign In
+    </button>
+    <p class="text-sm text-gray-300">
+      Don't have an account? 
+      <span id="goToSignUp" class="text-green-400 cursor-pointer">Sign Up</span>
+    </p>
+  </div>
+</div>
   <!-- Game Scripts -->
   <script type="module" src="main.js"></script>
 </body>
