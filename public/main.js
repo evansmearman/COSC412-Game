@@ -300,7 +300,8 @@
     // Add all players to the game
     players.forEach((player) => {
       if (player.id !== socket.id) {
-        addNewPlayer(player.id, { x: 0, y: 0, z: 0 });
+        addNewPlayer(player.id, player.role);
+        console.log("HERE IT IS")
       }
       console.log(`Player ${player.name} loaded with role: ${player.role}`);
     });
@@ -328,11 +329,11 @@
 
   // Remove disconnected players
   socket.on('playerDisconnect', (id) => {
-    if (players[id]) {
-      scene.remove(players[id]);
-      delete players[id];
+    if (otherPlayers[id]) {
+        scene.remove(otherPlayers[id]);
+        delete otherPlayers[id];
     }
-  });
+});
 
   function createPlayerMesh() {
     const geometry = new THREE.BoxGeometry();
@@ -408,169 +409,87 @@ chatInput.placeholder = 'Type your message here...';
 document.body.appendChild(chatInput);
 
 
-  // Geometry and materials for player
+ // Geometry and materials for player
   const geometry = new THREE.BoxGeometry();
   const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-  const playerMesh = new THREE.Mesh(geometry, material);
+  let playerMesh = new THREE.Mesh(geometry, material);
   scene.background = new THREE.Color(0x87CEEB);
   scene.add(playerMesh);
 
 
+  // const cameraHelper = new THREE.CameraHelper(camera)
+  // scene.add(cameraHelper)
+
   function visualizeTrimesh(trimesh, scene, map) {
-    // Convert the Cannon.js trimesh vertices and indices into a Three.js geometry
     const geometry = new THREE.BufferGeometry();
-    const vertices = new Float32Array(trimesh.vertices);
-    const indices = new Uint16Array(trimesh.indices);
-  
-    // Determine offset based on the map
-    const offsetY = map === "Map1" ? 0 : 50;
-  
-    geometry.setAttribute("position", new THREE.BufferAttribute(vertices, 3));
-    geometry.setIndex(new THREE.BufferAttribute(indices, 1));
-  
-    // Create a wireframe for visualization
+    geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(trimesh.vertices), 3));
+    geometry.setIndex(new THREE.BufferAttribute(new Uint16Array(trimesh.indices), 1));
+
     const material = new THREE.LineBasicMaterial({ color: 0xff0000 });
     const wireframe = new THREE.LineSegments(new THREE.EdgesGeometry(geometry), material);
-  
-    // Apply the offset
-    wireframe.position.y += offsetY;
-  
-    // Add wireframe to the scene
     scene.add(wireframe);
-  
-    // Add physics collision body for the wireframe
-    const physicsBody = new CANNON.Body({
-      mass: 0, // Static object
-      shape: new CANNON.Trimesh(trimesh.vertices, trimesh.indices),
+
+    // Add collision body to the physics world
+    const wiremeshBody = new CANNON.Body({
+        mass: 0, // Static object
+        collisionFilterGroup: 0b10, // Group for static objects
+        collisionFilterMask: 0b01, // Collides with players
     });
-  
-    // Set position and rotation of the physics body to match the wireframe
-    physicsBody.position.set(wireframe.position.x, wireframe.position.y, wireframe.position.z);
-    physicsBody.quaternion.set(
-      wireframe.quaternion.x,
-      wireframe.quaternion.y,
-      wireframe.quaternion.z,
-      wireframe.quaternion.w
-    );
-  
-    // Add the physics body to the Cannon.js world
-    world.addBody(physicsBody);
-  
-    return trimesh;
-  }
-  
+    wiremeshBody.addShape(new CANNON.Trimesh(trimesh.vertices, trimesh.indices));
+    world.addBody(wiremeshBody);
+
+    return wiremeshBody;
+}
+
+
+function updatePlayerPhysics() {
+  playerMesh.position.copy(playerBody.position);
+  playerMesh.quaternion.copy(playerBody.quaternion);
+}
   // Variable to control the Y offset of the bounding box
   let boundingYOffset = 0; // Default offset is 0
 
 
 const loader = new GLTFLoader();
 
-  
-  loader.load(
-    'assets/CharacterFly.glb', // Path to your .glb/.gltf file
-    (gltf) => {
-      const model = gltf.scene;
-      model.position.y = -1
-      model.traverse((child) => {
-        if (child.isMesh) {
-          child.castShadow = true;
-          child.receiveShadow = true;
-        }
-      });
-
-      // Add the model to the scene
-      scene.add(model);
-
-      // Setup Animation Mixer
-      if (gltf.animations && gltf.animations.length > 0) {
-        const mixer = new THREE.AnimationMixer(model);
-        const action = mixer.clipAction(gltf.animations[1]); // Play the first animation
-        action.play();
-      }
-    },
-    undefined,
-    (error) => {
-      console.error('An error occurred while loading the model:', error);
-    }
-  );
-  loader.load(
-    'assets/CharacterHuman.glb', // Path to your .glb/.gltf file
-    (gltf) => {
-      const model = gltf.scene;
-      model.position.y = 0
-      model.traverse((child) => {
-        if (child.isMesh) {
-          child.castShadow = true;
-          child.receiveShadow = true;
-        }
-      });
-
-      // Add the model to the scene
-      scene.add(model);
-
-      // Setup Animation Mixer
-      if (gltf.animations && gltf.animations.length > 0) {
-        const mixer = new THREE.AnimationMixer(model);
-        const action = mixer.clipAction(gltf.animations[1]); // Play the first animation
-        action.play();
-      }
-    },
-    undefined,
-    (error) => {
-      console.error('An error occurred while loading the model:', error);
-    }
-  );
 
 
+// function createBarrierWall({ position, size, rotation = { x: 0, y: 0, z: 0 } }) {
+//   const geometry = new THREE.BoxGeometry(size.width, size.height, size.depth);
+//   const material = new THREE.MeshStandardMaterial({ color: 0x606060 });
+//   const wall = new THREE.Mesh(geometry, material);
+//   wall.position.set(position.x, position.y, position.z);
+//   wall.rotation.set(rotation.x, rotation.y, rotation.z);
+//   scene.add(wall);
 
-  function createBarrierWall({ position, size, rotation = { x: 0, y: 0, z: 0 } }) {
-    // Create wall geometry and material
-    const geometry = new THREE.BoxGeometry(size.width, size.height, size.depth);
-    const material = new THREE.MeshStandardMaterial({ color: 0x606060 });
-    const wall = new THREE.Mesh(geometry, material);
-  
-    // Set position and rotation
-    wall.position.set(position.x, position.y, position.z);
-    wall.rotation.set(rotation.x, rotation.y, rotation.z);
-  
-    // Enable shadows
-    wall.castShadow = true;
-    wall.receiveShadow = true;
-  
-    // Add to the scene
-    scene.add(wall);
-  
-    // Create corresponding physics body
-    const wallShape = new CANNON.Box(
-      new CANNON.Vec3(size.width / 2, size.height / 2, size.depth / 2)
-    );
-    const wallBody = new CANNON.Body({
-      mass: 0, // Static wall
-      position: new CANNON.Vec3(position.x, position.y, position.z),
-    });
-  
-    // Apply rotation
-    wallBody.quaternion.setFromEuler(rotation.x, rotation.y, rotation.z);
-    wallBody.addShape(wallShape);
-  
-    // Add the wall to the physics world
-    world.addBody(wallBody);
-  }
+//   // Add collision body to physics world
+//   const wallShape = new CANNON.Box(
+//       new CANNON.Vec3(size.width / 2, size.height / 2, size.depth / 2)
+//   );
+//   const wallBody = new CANNON.Body({ mass: 0 }); // Static wall
+//   wallBody.addShape(wallShape);
+//   wallBody.position.set(position.x, position.y, position.z);
+//   wallBody.quaternion.setFromEuler(rotation.x, rotation.y, rotation.z);
+//   world.addBody(wallBody);
 
-  const barriers = [
-    // Horizontal barriers
-    { position: { x: 0, y: 1, z: 20 }, size: { width: 50, height: 5, depth: 1 } },
-    { position: { x: 0, y: 1, z: -20 }, size: { width: 50, height: 5, depth: 1 } },
+//   return wallBody;
+// }
+
+
+  // const barriers = [
+  //   // Horizontal barriers
+  //   { position: { x: 0, y: 1, z: 20 }, size: { width: 50, height: 5, depth: 1 } },
+  //   { position: { x: 0, y: 1, z: -20 }, size: { width: 50, height: 5, depth: 1 } },
   
-    // Vertical barriers
-    { position: { x: 20, y: 1, z: 0 }, size: { width: .001, height: 50, depth: 50 }, rotation: { x: 0, y: Math.PI / 2, z: 0 } },
-    { position: { x: -20, y: 1, z: 0 }, size: { width: .001, height: 50, depth: 50 }, rotation: { x: 0, y: Math.PI / 2, z: 0 } },
-  ];
+  //   // Vertical barriers
+  //   { position: { x: 20, y: 1, z: 0 }, size: { width: .001, height: 50, depth: 50 }, rotation: { x: 0, y: Math.PI / 2, z: 0 } },
+  //   { position: { x: -20, y: 1, z: 0 }, size: { width: .001, height: 50, depth: 50 }, rotation: { x: 0, y: Math.PI / 2, z: 0 } },
+  // ];
   
-  // Create barriers
-  barriers.forEach((barrier) => {
-    createBarrierWall(barrier);
-  });
+  // // Create barriers
+  // barriers.forEach((barrier) => {
+  //   createBarrierWall(barrier);
+  // });
   // Load and replace the cube with the Fly model
 
   let powerUpMesh;
@@ -777,10 +696,6 @@ const playerBody = new CANNON.Body({
 world.addBody(playerBody);
   
   // Sync Three.js mesh with Cannon.js body
-  function updatePlayerPhysics() {
-    playerMesh.position.copy(playerBody.position);
-    playerMesh.quaternion.copy(playerBody.quaternion);
-  }
   
   // Define boundary dimensions
   const boundary = { x: 124, y: 128.5, z: 138.6 };
@@ -863,15 +778,18 @@ world.addBody(playerBody);
   let mouseLocked = false;
   document.addEventListener('mousemove', (event) => {
     if (mouseLocked) {
-      const sensitivity = 0.002;
-      yaw -= event.movementX * sensitivity;
-      pitch -= event.movementY * sensitivity;
-      pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, pitch));
-      playerMesh.rotation.set(0, yaw, 0);
-      camera.rotation.set(pitch, 0, 0);
-    }
-  });
+        const sensitivity = 0.002;
+        yaw -= event.movementX * sensitivity;
+        pitch -= event.movementY * sensitivity;
 
+        // Clamp pitch
+        pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, pitch));
+
+        // Apply rotation to the camera and player body
+        playerBody.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), yaw); // Rotate player
+        camera.rotation.x = pitch; // Rotate camera
+    }
+});
   document.addEventListener('click', () => {
     if (isGameStarted && !mouseLocked) {
       document.body.requestPointerLock();
@@ -921,103 +839,103 @@ world.addBody(playerBody);
   function shootSphere() {
     const sphereRadius = 1.1;
     const sphereMass = 0.1;
-  
+
     // Create the Three.js sphere mesh
     const sphereGeometry = new THREE.SphereGeometry(sphereRadius, 8, 8);
     const sphereMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
     const sphereMesh = new THREE.Mesh(sphereGeometry, sphereMaterial);
-  
+
     // Set the initial position of the sphere slightly in front of the player
     const startPosition = new THREE.Vector3();
     camera.getWorldPosition(startPosition); // Get the camera's world position
     const forwardDirection = new THREE.Vector3();
     camera.getWorldDirection(forwardDirection); // Get the direction the camera is facing
     sphereMesh.position.copy(startPosition.add(forwardDirection.multiplyScalar(3))); // Offset position forward
-  
+
     // Add the sphere mesh to the scene
     scene.add(sphereMesh);
-  
+
     // Create the Cannon.js body for physics
     const sphereShape = new CANNON.Sphere(sphereRadius);
     const sphereBody = new CANNON.Body({ mass: sphereMass });
     sphereBody.addShape(sphereShape);
     sphereBody.position.set(
-      sphereMesh.position.x,
-      sphereMesh.position.y,
-      sphereMesh.position.z
+        sphereMesh.position.x,
+        sphereMesh.position.y,
+        sphereMesh.position.z
     );
-  
-    sphereBody.collisionFilterGroup = 0b10; // Define a group for projectiles
-    sphereBody.collisionFilterMask = ~0b01; // Exclude collisions with the player's collision group
+
+    // Allow collisions with walls, obstacles, and wiremesh
+    sphereBody.collisionFilterGroup = 0b10; // Projectiles group
+    sphereBody.collisionFilterMask = 0b11; // Collides with static objects and other projectiles
+
+    // Add the sphere body to the physics world
     world.addBody(sphereBody);
-  
+
     // Set the sphere's velocity in the direction the camera is facing
     const velocity = forwardDirection.multiplyScalar(150); // Adjust speed multiplier as needed
     sphereBody.velocity.set(velocity.x, velocity.y, velocity.z);
-  
-    // Store the projectile
+
+    // Store the projectile for updating later
     projectiles.push({ mesh: sphereMesh, body: sphereBody });
-  
-    // Collision handling
+
+    // Collision handling for spheres
     sphereBody.addEventListener('collide', (event) => {
-      const collidedBody = event.body;
-      console.log("Hit something")
-      console.log(event.body)
-  
-      if (obstacleBodies.includes(collidedBody) || collidedBody === groundBody) {
-        // Handle collision logic, such as reducing obstacle health
+        const collidedBody = event.body;
+        console.log("Sphere hit something:", collidedBody);
+
+        // Check if it hit an obstacle
         if (obstacleBodies.includes(collidedBody)) {
-          const obstacleIndex = obstacleBodies.indexOf(collidedBody);
-          if (obstacleIndex > -1) {
-            obstacleHealth[obstacleIndex] -= 20;
-            const healthPercentage = Math.max(0, obstacleHealth[obstacleIndex] / 100);
-            healthBars[obstacleIndex].scale.set(healthPercentage, 1, 1);
-            healthBars[obstacleIndex].material.color.setHex(
-              healthPercentage > 0.5
-                ? 0x00ff00
-                : healthPercentage > 0.25
-                ? 0xffff00
-                : 0xff0000
-            );
-            if (obstacleHealth[obstacleIndex] <= 0) {
-              // Remove the obstacle
-              scene.remove(obstacles[obstacleIndex]);
-              scene.remove(healthBars[obstacleIndex]);
-              world.removeBody(obstacleBodies[obstacleIndex]);
-              obstacles.splice(obstacleIndex, 1);
-              obstacleBodies.splice(obstacleIndex, 1);
-              obstacleHealth.splice(obstacleIndex, 1);
-              healthBars.splice(obstacleIndex, 1);
+            const obstacleIndex = obstacleBodies.indexOf(collidedBody);
+            if (obstacleIndex > -1) {
+                // Reduce obstacle health
+                obstacleHealth[obstacleIndex] -= 20;
+                const healthPercentage = Math.max(0, obstacleHealth[obstacleIndex] / 100);
+                healthBars[obstacleIndex].scale.set(healthPercentage, 1, 1);
+                healthBars[obstacleIndex].material.color.setHex(
+                    healthPercentage > 0.5 ? 0x00ff00 :
+                    healthPercentage > 0.25 ? 0xffff00 : 0xff0000
+                );
+
+                // Remove the obstacle if health is zero
+                if (obstacleHealth[obstacleIndex] <= 0) {
+                    scene.remove(obstacles[obstacleIndex]);
+                    scene.remove(healthBars[obstacleIndex]);
+                    world.removeBody(obstacleBodies[obstacleIndex]);
+                    obstacles.splice(obstacleIndex, 1);
+                    obstacleBodies.splice(obstacleIndex, 1);
+                    obstacleHealth.splice(obstacleIndex, 1);
+                    healthBars.splice(obstacleIndex, 1);
+                }
             }
-          }
         }
-  
-        // Remove the projectile
+
+        // Remove the sphere on collision with any static object
         removeProjectile(sphereMesh, sphereBody);
-      }
     });
-  
-    // Automatically remove the projectile after 10 seconds
+
+    // Automatically remove the sphere after 10 seconds
     setTimeout(() => {
-      removeProjectile(sphereMesh, sphereBody);
+        removeProjectile(sphereMesh, sphereBody);
     }, 10000);
-  }
-  
-  // Function to remove a projectile
-  function removeProjectile(mesh, body) {
-    // Check if the projectile is still in the scene/world
+}
+
+// Function to remove a projectile
+function removeProjectile(mesh, body) {
     if (scene.children.includes(mesh)) {
-      scene.remove(mesh);
+        scene.remove(mesh);
     }
     if (world.bodies.includes(body)) {
-      world.removeBody(body);
+        world.removeBody(body);
     }
-  
+
     // Remove from the projectiles array
     projectiles = projectiles.filter((p) => p.body !== body);
-  }
+}
 
-
+  
+  // Function to remove a projectile
+ 
   // Function to create a particle effect at a collision position
   function createParticleEffect(position) {
     const particleCount = 30;
@@ -1085,6 +1003,39 @@ world.addBody(playerBody);
       }
     }
   }
+  playerBody.collisionResponse = true; // Enable collision response
+playerBody.allowSleep = false; // Prevent the body from "sleeping"
+playerBody.collisionFilterGroup = 0b01; // Group for players
+playerBody.collisionFilterMask = 0b10; // Collides with static objects
+playerBody.linearDamping = 0.1; // Dampen velocity to reduce jitter
+
+// Enable CCD
+playerBody.ccdMotionThreshold = 1; // Threshold for motion-based collision
+playerBody.ccdSweptSphereRadius = playerRadius; // Swept radius to detect collisions
+
+playerBody.angularDamping = 0.9; // High damping reduces rotation significantly
+
+
+function handlePlayerMovement() {
+  const playerSpeed = 5; // Adjust speed as needed
+
+  // Reset horizontal velocity
+  playerBody.velocity.x = 0;
+  playerBody.velocity.z = 0;
+
+  // Compute movement based on input
+  if (moveForward) playerBody.velocity.z -= playerSpeed;
+  if (moveBackward) playerBody.velocity.z += playerSpeed;
+  if (moveLeft) playerBody.velocity.x -= playerSpeed;
+  if (moveRight) playerBody.velocity.x += playerSpeed;
+
+  // Ensure movement stays horizontal (no vertical velocity changes)
+  playerBody.velocity.y = 0; // Keep the player grounded
+
+  // Prevent rotation
+  playerBody.angularVelocity.set(0, 0, 0); // Prevent angular motion
+}
+
 
   function animate() {
     if (!isGameStarted) return; // Stop the game loop if the game has ended
@@ -1110,12 +1061,9 @@ world.addBody(playerBody);
   }
     checkPowerUpCollision(); // Check collision with power-up
     updateProjectiles();
-
+    handlePlayerMovement()
+    updatePlayerPhysics();
     let direction = new THREE.Vector3();
-    if (moveForward) direction.z -= playerSpeed;
-    if (moveBackward) direction.z += playerSpeed;
-    if (moveLeft) direction.x -= playerSpeed;
-    if (moveRight) direction.x += playerSpeed;
 
     direction.applyQuaternion(playerMesh.quaternion);
     playerMesh.position.add(direction);
@@ -1128,6 +1076,7 @@ world.addBody(playerBody);
     //   const groundLevel = playerBody.position.y > 0 ? 0 : boundingBox.min.y;
     //   playerBody.position.y = Math.max(playerBody.position.y, groundLevel);
     // }
+    
     keepPlayerWithinBounds()
     if (isFlying) {
       if (flyUp) playerMesh.position.y += flyingSpeed;
@@ -1208,18 +1157,19 @@ world.addBody(playerBody);
     });
   }
 
-  socket.on('currentPlayers', (players) => {
-    Object.keys(players).forEach((id) => {
-      if (id !== socket.id) {
-        const player = players[id];
-        addNewPlayer(id, player.position);
-      }
-    });
-  });
-
   socket.on('newPlayer', (data) => {
-    addNewPlayer(data.id, data.player.position);
-  });
+    addNewPlayer(data.id, { role: data.role });
+    console.log(data);
+});
+
+socket.on('currentPlayers', (players) => {
+    Object.keys(players).forEach((id) => {
+        if (id !== socket.id) {
+            addNewPlayer(id, { role: players[id].role });
+        }
+    });
+});
+
 
   socket.on('playerMoved', (data) => {
     if (otherPlayers[data.id]) {
@@ -1238,15 +1188,115 @@ world.addBody(playerBody);
 
   socket.on('assignRole', (role) => {
     isFlying = role === 'Insect';
-    console.log(`Player assigned role: ${role}`);
-  });
+    const loader = new GLTFLoader();
 
-  function addNewPlayer(id, position) {
-    const otherPlayerMesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ color: 0xff0000 }));
-    otherPlayerMesh.position.set(position.x, position.y, position.z);
-    scene.add(otherPlayerMesh);
-    otherPlayers[id] = otherPlayerMesh;
-  }
+    if (role === 'Insect') {
+        let flyMixer;
+        loader.load(
+            'assets/CharacterFly.glb', // Path to your fly model
+            (gltf) => {
+                const flyModel = gltf.scene;
+                flyModel.scale.set(1, 1, 1); // Adjust based on your model
+                flyModel.position.set(playerBody.position.x, playerBody.position.y, playerBody.position.z); // Align with physics body
+                flyModel.rotation.y = Math.PI; // Rotate 180 degrees
+                flyModel.traverse((child) => {
+                    if (child.isMesh) {
+                        child.castShadow = true;
+                        child.receiveShadow = true;
+                    }
+                });
+
+                // Replace old player mesh
+                if (playerMesh.parent) {
+                    scene.remove(playerMesh);
+                }
+                playerMesh = flyModel;
+                scene.add(playerMesh);
+
+                const shape = new CANNON.Box(new CANNON.Vec3(0.5, 0.2, 0.5)); // Adjust dimensions
+                playerBody.addShape(shape);
+
+                // Attach the camera to the insect model
+                playerMesh.add(camera);
+                camera.position.set(0, 0.5, -0.5); // Slightly above and forward of the insect's body
+                camera.rotation.set(0, Math.PI / 2, 0); // Reset camera rotation
+                camera.rotation.order = "YXZ"; 
+
+                if (gltf.animations && gltf.animations.length > 0) {
+                    flyMixer = new THREE.AnimationMixer(flyModel);
+                    const action = flyMixer.clipAction(gltf.animations[0]);
+                    action.play();
+                }
+            },
+            undefined,
+            (error) => {
+                console.error('Error loading fly model:', error);
+            }
+        );
+    } else if (role === 'Human') {
+        let humanMixer;
+        loader.load(
+            'assets/CharacterHuman.glb', // Path to your human model
+            (gltf) => {
+                const humanModel = gltf.scene;
+                humanModel.scale.set(1, 1, 1); // Adjust based on your model
+                humanModel.position.set(playerBody.position.x, playerBody.position.y, playerBody.position.z); // Align with physics body
+                humanModel.rotation.y = 0; // Default orientation
+                humanModel.traverse((child) => {
+                    if (child.isMesh) {
+                        child.castShadow = true;
+                        child.receiveShadow = true;
+                    }
+                });
+
+                // Replace old player mesh
+                if (playerMesh.parent) {
+                    scene.remove(playerMesh);
+                }
+                playerMesh = humanModel;
+                scene.add(playerMesh);
+
+                const shape = new CANNON.Box(new CANNON.Vec3(0.5, 1, 0.5)); // Adjust dimensions for human
+                playerBody.addShape(shape);
+
+                // Attach the camera to the human model
+                playerMesh.add(camera);
+                camera.position.set(0, 70, -10); // Adjust camera position for human
+                camera.rotation.set(0, 0, 0); // Reset camera rotation
+
+                if (gltf.animations && gltf.animations.length > 0) {
+                    humanMixer = new THREE.AnimationMixer(humanModel);
+                    const action = humanMixer.clipAction(gltf.animations[0]);
+                    action.play();
+                }
+            },
+            undefined,
+            (error) => {
+                console.error('Error loading human model:', error);
+            }
+        );
+    }
+
+    console.log(`Player assigned role: ${role}`);
+});
+
+function addNewPlayer(id, data) {
+  console.log(data, "HEHRHEHREHEH")
+  const loader = new GLTFLoader();
+  loader.load(
+      data === 'Insect' ? 'assets/CharacterFly.glb' : 'assets/CharacterHuman.glb',
+      (gltf) => {
+          const model = gltf.scene;
+          model.scale.set(1, 1, 1);
+          model.position.set(0, 1, 0);
+          scene.add(model);
+          otherPlayers[id] = model;
+          console.log(`Added player ${id} as ${data}`);
+      },
+      undefined,
+      (error) => console.error(`Error loading model for player ${id}:`, error)
+  );
+}
 
   // Make chat visible when input is focused
   if (chatInput && chatContainer) {

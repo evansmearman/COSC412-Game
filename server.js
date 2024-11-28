@@ -1,11 +1,13 @@
 import express from 'express';
 import http from 'http';
 import { Server } from 'socket.io';
+import cors from 'cors';
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+app.use(cors());
 app.use(express.static('public'));
 
 const LOBBY_SIZE = process.env.LOBBY_SIZE || 4;
@@ -241,19 +243,33 @@ io.on('connection', (socket) => {
             delete players[socket.id];
         }
     });
+    socket.on('reconnect', () => {
+        const player = players[socket.id];
+        if (player && lobbies[player.lobbyCode]) {
+            socket.join(player.lobbyCode);
+            console.log(`Player ${socket.id} rejoined lobby ${player.lobbyCode}`);
+            io.to(player.lobbyCode).emit('updateLobby', {
+                players: lobbies[player.lobbyCode].players,
+                host: lobbies[player.lobbyCode].host,
+            });
+        }
+    });
+    
 });
 
 // Assign roles to players in a lobby
 function assignRoles(lobbyCode) {
     const roles = ['Human', 'Insect'];
     const lobby = lobbies[lobbyCode];
+    const shuffledRoles = roles.concat(roles).sort(() => Math.random() - 0.5);
     lobby.players.forEach((player, index) => {
-        const role = roles[index % roles.length];
+        const role = shuffledRoles[index % shuffledRoles.length];
         players[player.id].role = role;
         io.to(player.id).emit('assignRole', role);
         console.log(`Assigned role "${role}" to player: ${player.id}`);
     });
 }
+
 
 // Reset lobby state
 function resetLobbyState(lobbyCode) {
