@@ -25,7 +25,6 @@
   let finalMap = ''
   // Game variables
   let lobbyCode = '';
-  // let keepPlayerWithinBounds = null; // Declare globally
 
   let playersInLobby = [];
   let playerRole = '';
@@ -417,9 +416,6 @@ document.body.appendChild(chatInput);
   scene.add(playerMesh);
 
 
-  // const cameraHelper = new THREE.CameraHelper(camera)
-  // scene.add(cameraHelper)
-
   function visualizeTrimesh(trimesh, scene, map) {
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(trimesh.vertices), 3));
@@ -447,51 +443,11 @@ function updatePlayerPhysics() {
   playerMesh.position.copy(playerBody.position);
   playerMesh.quaternion.copy(playerBody.quaternion);
 }
-  // Variable to control the Y offset of the bounding box
-  let boundingYOffset = 0; // Default offset is 0
 
 
 const loader = new GLTFLoader();
 
 
-
-// function createBarrierWall({ position, size, rotation = { x: 0, y: 0, z: 0 } }) {
-//   const geometry = new THREE.BoxGeometry(size.width, size.height, size.depth);
-//   const material = new THREE.MeshStandardMaterial({ color: 0x606060 });
-//   const wall = new THREE.Mesh(geometry, material);
-//   wall.position.set(position.x, position.y, position.z);
-//   wall.rotation.set(rotation.x, rotation.y, rotation.z);
-//   scene.add(wall);
-
-//   // Add collision body to physics world
-//   const wallShape = new CANNON.Box(
-//       new CANNON.Vec3(size.width / 2, size.height / 2, size.depth / 2)
-//   );
-//   const wallBody = new CANNON.Body({ mass: 0 }); // Static wall
-//   wallBody.addShape(wallShape);
-//   wallBody.position.set(position.x, position.y, position.z);
-//   wallBody.quaternion.setFromEuler(rotation.x, rotation.y, rotation.z);
-//   world.addBody(wallBody);
-
-//   return wallBody;
-// }
-
-
-  // const barriers = [
-  //   // Horizontal barriers
-  //   { position: { x: 0, y: 1, z: 20 }, size: { width: 50, height: 5, depth: 1 } },
-  //   { position: { x: 0, y: 1, z: -20 }, size: { width: 50, height: 5, depth: 1 } },
-  
-  //   // Vertical barriers
-  //   { position: { x: 20, y: 1, z: 0 }, size: { width: .001, height: 50, depth: 50 }, rotation: { x: 0, y: Math.PI / 2, z: 0 } },
-  //   { position: { x: -20, y: 1, z: 0 }, size: { width: .001, height: 50, depth: 50 }, rotation: { x: 0, y: Math.PI / 2, z: 0 } },
-  // ];
-  
-  // // Create barriers
-  // barriers.forEach((barrier) => {
-  //   createBarrierWall(barrier);
-  // });
-  // Load and replace the cube with the Fly model
 
   let powerUpMesh;
   const powerUpPosition = new THREE.Vector3((Math.random() - 0.5) * 100, 3, (Math.random() - 0.5) * 100); // Random position
