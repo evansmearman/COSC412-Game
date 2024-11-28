@@ -259,15 +259,26 @@ io.on('connection', (socket) => {
 
 // Assign roles to players in a lobby
 function assignRoles(lobbyCode) {
-    const roles = ['Human', 'Insect'];
     const lobby = lobbies[lobbyCode];
-    const shuffledRoles = roles.concat(roles).sort(() => Math.random() - 0.5);
-    lobby.players.forEach((player, index) => {
-        const role = shuffledRoles[index % shuffledRoles.length];
+
+    if (!lobby || !lobby.players || lobby.players.length === 0) {
+        console.error(`Lobby "${lobbyCode}" does not exist or has no players.`);
+        return;
+    }
+
+    // Randomly pick one player to be the "Human"
+    const humanIndex = Math.floor(Math.random() * lobby.players.length);
+    const humanPlayer = lobby.players[humanIndex];
+
+    // Assign roles
+    lobby.players.forEach((player) => {
+        const role = player.id === humanPlayer.id ? 'Human' : 'Insect';
         players[player.id].role = role;
         io.to(player.id).emit('assignRole', role);
         console.log(`Assigned role "${role}" to player: ${player.id}`);
     });
+
+    console.log(`Roles assigned for lobby "${lobbyCode}". Human: ${humanPlayer.id}`);
 }
 
 

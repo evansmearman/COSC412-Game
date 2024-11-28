@@ -427,6 +427,7 @@ document.body.appendChild(chatInput);
 
     const material = new THREE.LineBasicMaterial({ color: 0xff0000 });
     const wireframe = new THREE.LineSegments(new THREE.EdgesGeometry(geometry), material);
+    wireframe.visible = false
     scene.add(wireframe);
 
     // Add collision body to the physics world
@@ -726,7 +727,7 @@ world.addBody(playerBody);
   const obstacleHealth = [];
   const healthBars = [];
 
-  for (let i = 0; i < 1; i++) {
+  for (let i = 0; i < 0; i++) {
     // Create the visual obstacle mesh in Three.js
     const obstacle = new THREE.Mesh(obstacleGeometry, obstacleMaterial);
     obstacle.position.set((Math.random() - 0.5) * 100, 0, (Math.random() - 0.5) * 100);
@@ -1015,9 +1016,10 @@ playerBody.ccdSweptSphereRadius = playerRadius; // Swept radius to detect collis
 
 playerBody.angularDamping = 0.9; // High damping reduces rotation significantly
 
-
+playerBody.fixedRotation = true;
+playerBody.updateMassProperties();
 function handlePlayerMovement() {
-  const playerSpeed = 5; // Adjust speed as needed
+  const playerSpeed = 10; // Adjust speed as needed
 
   // Reset horizontal velocity
   playerBody.velocity.x = 0;
