@@ -167,14 +167,20 @@ io.on('connection', (socket) => {
     });
 
     // Handle game ending
-    socket.on('gameEnded', ({ lobbyCode }) => {
-        console.log(`Game ended for lobby: ${lobbyCode}`);
-        if (lobbies[lobbyCode]) {
-            lobbies[lobbyCode].gameStarted = false;
+    socket.on('endGame', ({ isWinner }) => {
+        const lobbyCode = getPlayerLobby(socket.id);
+        if (lobbyCode) {
+            // Notify all players in the lobby
+            lobbies[lobbyCode].players.forEach((player) => {
+                const isPlayerWinner = player.id === socket.id && isWinner;
+                io.to(player.id).emit('endGame', { isWinner: isPlayerWinner });
+            });
+    
+            console.log(`Game ended for lobby: ${lobbyCode}`);
+        } else {
+            console.error(`Lobby not found for player: ${socket.id}`);
         }
-        io.to(lobbyCode).emit('gameEnded');
     });
-
     // Handle returning to the lobby
     socket.on('returnToLobby', ({ lobbyCode }) => {
         console.log(`Returning players in lobby ${lobbyCode} to the lobby screen.`);
@@ -307,6 +313,11 @@ function isValidPosition(position) {
 // Sanitize chat messages to prevent XSS
 function sanitizeMessage(message) {
     return message.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function getPlayerLobby(playerId) {
+    const player = players[playerId];
+    return player ? player.lobbyCode : null;
 }
 
 // Start the server

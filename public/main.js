@@ -21,6 +21,7 @@
   const backToLobbyButton = document.getElementById('backToLobbyButton');
   const confirmMapButton = document.getElementById('confirmMapButton');
   const leaveLobbyButton = document.getElementById('leaveLobbyButton');
+  const gameEndScreen = document.getElementById('gameEndScreen')
   let selectedMap = '';
   let finalMap = ''
   // Game variables
@@ -600,7 +601,7 @@ const loader = new GLTFLoader();
   dirLight.shadow.camera.bottom = -d;
   dirLight.shadow.camera.near = 1; // Near plane for shadows
   dirLight.shadow.camera.far = 1000; // Far plane for shadows
-  dirLight.shadow.bias = -0.0009; // Bias to reduce shadow acne
+  dirLight.shadow.bias = -0.0001; // Bias to reduce shadow acne
   scene.add(dirLight);
 
   const dirLightHelper = new THREE.DirectionalLightHelper(dirLight, 10);
@@ -676,44 +677,47 @@ world.addBody(playerBody);
 
 
   // Obstacle setup with physics for Cannon.js
-  const obstacleGeometry = new THREE.BoxGeometry(2, 2, 2);
-  const obstacleMaterial = new THREE.MeshBasicMaterial({ color: 0x8B4513 });
-  const obstacles = [];
-  const obstacleBodies = []; // Store the obstacle bodies for physics
-  const obstacleHealth = [];
-  const healthBars = [];
-
-  for (let i = 0; i < 0; i++) {
-    // Create the visual obstacle mesh in Three.js
-    const obstacle = new THREE.Mesh(obstacleGeometry, obstacleMaterial);
-    obstacle.position.set((Math.random() - 0.5) * 100, 0, (Math.random() - 0.5) * 100);
-    obstacle.castShadow = true; // Cast shadows
-    obstacle.receiveShadow = true; // Receive shadows
-    scene.add(obstacle);
-    obstacles.push(obstacle);
-
-    // Create the physics body for each obstacle in Cannon.js
-    const obstacleShape = new CANNON.Box(new CANNON.Vec3(1, 1, 1)); // Size matches Three.js obstacle
-    const obstacleBody = new CANNON.Body({
-      mass: 0, // Static obstacle
       position: new CANNON.Vec3(obstacle.position.x, obstacle.position.y, obstacle.position.z),
     });
     obstacleBody.addShape(obstacleShape);
-    world.addBody(obstacleBody);
-    obstacleBodies.push(obstacleBody);
+  // const obstacleGeometry = new THREE.BoxGeometry(2, 2, 2);
+  // const obstacleMaterial = new THREE.MeshBasicMaterial({ color: 0x8B4513 });
+  // const obstacles = [];
+  // const obstacleBodies = []; // Store the obstacle bodies for physics
+  // const obstacleHealth = [];
+  // const healthBars = [];
 
-    // Set initial health for each obstacle
-    obstacleHealth[i] = 100; // Example health value
+  // for (let i = 0; i < 0; i++) {
+  //   // Create the visual obstacle mesh in Three.js
+  //   const obstacle = new THREE.Mesh(obstacleGeometry, obstacleMaterial);
+  //   obstacle.position.set((Math.random() - 0.5) * 100, 0, (Math.random() - 0.5) * 100);
+  //   obstacle.castShadow = true; // Cast shadows
+  //   obstacle.receiveShadow = true; // Receive shadows
+  //   scene.add(obstacle);
+  //   obstacles.push(obstacle);
+
+  //   // Create the physics body for each obstacle in Cannon.js
+  //   const obstacleShape = new CANNON.Box(new CANNON.Vec3(1, 1, 1)); // Size matches Three.js obstacle
+  //   const obstacleBody = new CANNON.Body({
+  //     mass: 0, // Static obstacle
+  //     position: new CANNON.Vec3(obstacle.position.x, obstacle.position.y, obstacle.position.z),
+  //   });
+  //   obstacleBody.addShape(obstacleShape);
+  //   world.addBody(obstacleBody);
+  //   obstacleBodies.push(obstacleBody);
+
+  //   // Set initial health for each obstacle
+  //   obstacleHealth[i] = 100; // Example health value
 
     // Create health bar for the obstacle
-    const healthBarGeometry = new THREE.PlaneGeometry(1.5, 0.2); // Adjust size as needed
-    const healthBarMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-    const healthBar = new THREE.Mesh(healthBarGeometry, healthBarMaterial);
-    healthBar.position.set(obstacle.position.x, obstacle.position.y + 1.5, obstacle.position.z);
-    healthBar.lookAt(camera.position); // Make it face the camera
-    scene.add(healthBar);
-    healthBars.push(healthBar);
-  }
+  //   const healthBarGeometry = new THREE.PlaneGeometry(1.5, 0.2); // Adjust size as needed
+  //   const healthBarMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+  //   const healthBar = new THREE.Mesh(healthBarGeometry, healthBarMaterial);
+  //   healthBar.position.set(obstacle.position.x, obstacle.position.y + 1.5, obstacle.position.z);
+  //   healthBar.lookAt(camera.position); // Make it face the camera
+  //   scene.add(healthBar);
+  //   healthBars.push(healthBar);
+  // }
 
   // Movement, control, and role variables
   let playerSpeed = 1;
@@ -796,100 +800,119 @@ world.addBody(playerBody);
   function shootSphere() {
     const sphereRadius = 1.1;
     const sphereMass = 0.1;
-
+  
     // Create the Three.js sphere mesh
-    const sphereGeometry = new THREE.SphereGeometry(sphereRadius, 8, 8);
+    const sphereGeometry = new THREE.SphereGeometry(sphereRadius, 16, 16);
     const sphereMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
     const sphereMesh = new THREE.Mesh(sphereGeometry, sphereMaterial);
-
+  
     // Set the initial position of the sphere slightly in front of the player
     const startPosition = new THREE.Vector3();
     camera.getWorldPosition(startPosition); // Get the camera's world position
     const forwardDirection = new THREE.Vector3();
     camera.getWorldDirection(forwardDirection); // Get the direction the camera is facing
     sphereMesh.position.copy(startPosition.add(forwardDirection.multiplyScalar(3))); // Offset position forward
-
+  
     // Add the sphere mesh to the scene
     scene.add(sphereMesh);
-
+  
     // Create the Cannon.js body for physics
     const sphereShape = new CANNON.Sphere(sphereRadius);
-    const sphereBody = new CANNON.Body({ mass: sphereMass });
-    sphereBody.addShape(sphereShape);
-    sphereBody.position.set(
+    const sphereBody = new CANNON.Body({
+      mass: sphereMass,
+      shape: sphereShape,
+      position: new CANNON.Vec3(
         sphereMesh.position.x,
         sphereMesh.position.y,
         sphereMesh.position.z
-    );
-
-    // Allow collisions with walls, obstacles, and wiremesh
-    sphereBody.collisionFilterGroup = 0b10; // Projectiles group
-    sphereBody.collisionFilterMask = 0b11; // Collides with static objects and other projectiles
-
-    // Add the sphere body to the physics world
+      ),
+      collisionFilterGroup: 0b10, // Projectiles group
+      collisionFilterMask: 0b01 | 0b10, // Collides with players and obstacles
+    });
+  
     world.addBody(sphereBody);
-
+  
     // Set the sphere's velocity in the direction the camera is facing
     const velocity = forwardDirection.multiplyScalar(150); // Adjust speed multiplier as needed
     sphereBody.velocity.set(velocity.x, velocity.y, velocity.z);
-
-    // Store the projectile for updating later
+  
+    // Store the projectile for updates
     projectiles.push({ mesh: sphereMesh, body: sphereBody });
-
+  
     // Collision handling for spheres
     sphereBody.addEventListener('collide', (event) => {
-        const collidedBody = event.body;
-        console.log("Sphere hit something:", collidedBody);
-
-        // Check if it hit an obstacle
-        if (obstacleBodies.includes(collidedBody)) {
-            const obstacleIndex = obstacleBodies.indexOf(collidedBody);
-            if (obstacleIndex > -1) {
-                // Reduce obstacle health
-                obstacleHealth[obstacleIndex] -= 20;
-                const healthPercentage = Math.max(0, obstacleHealth[obstacleIndex] / 100);
-                healthBars[obstacleIndex].scale.set(healthPercentage, 1, 1);
-                healthBars[obstacleIndex].material.color.setHex(
-                    healthPercentage > 0.5 ? 0x00ff00 :
-                    healthPercentage > 0.25 ? 0xffff00 : 0xff0000
-                );
-
-                // Remove the obstacle if health is zero
-                if (obstacleHealth[obstacleIndex] <= 0) {
-                    scene.remove(obstacles[obstacleIndex]);
-                    scene.remove(healthBars[obstacleIndex]);
-                    world.removeBody(obstacleBodies[obstacleIndex]);
-                    obstacles.splice(obstacleIndex, 1);
-                    obstacleBodies.splice(obstacleIndex, 1);
-                    obstacleHealth.splice(obstacleIndex, 1);
-                    healthBars.splice(obstacleIndex, 1);
-                }
-            }
+      const collidedBody = event.body;
+  
+      // Check if it hit a player
+      Object.values(otherPlayers).forEach((player) => {
+        if (player.body === collidedBody) {
+          const playerId = Object.keys(otherPlayers).find(
+            (id) => otherPlayers[id].body === collidedBody
+          );
+  
+          // Reduce health and update health bar
+          player.health -= 20; // Decrease by 20 on each hit
+          updateHealthBar(playerId);
+  
+          console.log(`Player ${playerId} hit! Health: ${player.health}`);
+  
+          // Create particle effect at the hit position
+          createParticleEffect(player.mesh.position);
+  
+          // Remove the player if health reaches zero
+          if (player.health <= 0) {
+            removePlayer(playerId);
+          }
         }
-
-        // Remove the sphere on collision with any static object
-        removeProjectile(sphereMesh, sphereBody);
+      });
+  
+      // Remove the sphere on collision
+      removeProjectile(sphereMesh, sphereBody);
     });
-
+  
     // Automatically remove the sphere after 10 seconds
     setTimeout(() => {
-        removeProjectile(sphereMesh, sphereBody);
+      removeProjectile(sphereMesh, sphereBody);
     }, 10000);
-}
-
-// Function to remove a projectile
-function removeProjectile(mesh, body) {
+  }
+  
+  
+  // Function to remove a projectile and its hitbox
+  function removeProjectile(mesh, body, hitbox) {
     if (scene.children.includes(mesh)) {
-        scene.remove(mesh);
+      scene.remove(mesh);
+    }
+    if (scene.children.includes(hitbox)) {
+      scene.remove(hitbox);
     }
     if (world.bodies.includes(body)) {
-        world.removeBody(body);
+      world.removeBody(body);
     }
-
+  
     // Remove from the projectiles array
     projectiles = projectiles.filter((p) => p.body !== body);
-}
-
+  }
+  
+  function updateHealthBar(playerId) {
+    const player = otherPlayers[playerId];
+    if (!player) return;
+  
+    const healthPercentage = Math.max(0, player.health / 100);
+  
+    // Scale the health bar and update its color
+    const healthBar = healthBars[playerId];
+    if (healthBar) {
+      healthBar.scale.set(healthPercentage, 1, 1);
+      healthBar.material.color.setHex(
+        healthPercentage > 0.5 ? 0x00ff00 : healthPercentage > 0.25 ? 0xffff00 : 0xff0000
+      );
+  
+      // If health is zero, remove the player
+      if (healthPercentage <= 0) {
+        removePlayer(playerId);
+      }
+    }
+  }
   
   // Function to remove a projectile
  
@@ -938,6 +961,24 @@ function removeProjectile(mesh, body) {
     };
     animateParticles();
   }
+
+  const playerHealth = {};
+const healthBars = {};
+
+function createHealthBar(playerMesh, initialHealth = 100) {
+  const barGeometry = new THREE.PlaneGeometry(1.5, 0.2); // Adjust size as needed
+  const barMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+  const healthBar = new THREE.Mesh(barGeometry, barMaterial);
+
+  // Position the health bar above the player
+  healthBar.position.set(0, 1.5, 0); // Adjust height above the player
+  playerMesh.add(healthBar); // Add as a child to player mesh
+
+  // Initialize player health
+  playerHealth[playerMesh.id] = initialHealth;
+  healthBars[playerMesh.id] = healthBar;
+}
+
   function updateProjectiles() {
     for (let i = projectiles.length - 1; i >= 0; i--) {
       const projectile = projectiles[i];
@@ -976,16 +1017,42 @@ playerBody.fixedRotation = true;
 playerBody.updateMassProperties();
 function handlePlayerMovement() {
   const playerSpeed = 10; // Adjust speed as needed
-
+  const flySpeed = 5;
   // Reset horizontal velocity
   playerBody.velocity.x = 0;
   playerBody.velocity.z = 0;
 
+  // Get the camera's forward and right direction vectors
+  const cameraDirection = new THREE.Vector3();
+  camera.getWorldDirection(cameraDirection);
+
+  const cameraRight = new THREE.Vector3();
+  cameraRight.crossVectors(camera.up, cameraDirection).normalize();
+
   // Compute movement based on input
-  if (moveForward) playerBody.velocity.z -= playerSpeed;
-  if (moveBackward) playerBody.velocity.z += playerSpeed;
-  if (moveLeft) playerBody.velocity.x -= playerSpeed;
-  if (moveRight) playerBody.velocity.x += playerSpeed;
+  const moveDirection = new THREE.Vector3();
+
+  if (moveForward) moveDirection.add(cameraDirection);
+  if (moveBackward) moveDirection.add(cameraDirection.negate());
+  if (moveLeft) moveDirection.add(cameraRight);
+  if (moveRight) moveDirection.add(cameraRight.negate());
+
+  // Normalize the movement direction vector (to prevent faster diagonal movement)
+  if (moveDirection.length() > 0) {
+    moveDirection.normalize();
+    moveDirection.multiplyScalar(playerSpeed);
+  }
+    // Vertical movement (flying)
+    if (isFlying  ) {
+      if (flyUp) moveDirection.y += flySpeed;
+      if (flyDown) moveDirection.y -= flySpeed;
+    }
+  
+
+  // Apply movement direction to the playerBody
+  playerBody.velocity.x = moveDirection.x;
+  playerBody.velocity.y = moveDirection.y;
+  playerBody.velocity.z = moveDirection.z;
 
   // Ensure movement stays horizontal (no vertical velocity changes)
   playerBody.velocity.y = 0; // Keep the player grounded
@@ -1034,7 +1101,25 @@ function handlePlayerMovement() {
     //   const groundLevel = playerBody.position.y > 0 ? 0 : boundingBox.min.y;
     //   playerBody.position.y = Math.max(playerBody.position.y, groundLevel);
     // }
+        // Sync player hitboxes
+        Object.values(otherPlayers).forEach((player) => {
+          if (player.updateHitbox) {
+            player.updateHitbox();
+          }
+        });
     
+        // Sync projectile hitboxes
+        projectiles.forEach((projectile) => {
+          if (projectile.updateHitbox) {
+            projectile.updateHitbox();
+          }
+        });
+        Object.values(otherPlayers).forEach((player) => {
+          if (player.body) {
+            const updateHitbox = visualizePlayerHitbox(player.body);
+            player.updateHitbox = updateHitbox; // Store for later updates
+          }
+        });
     keepPlayerWithinBounds()
     if (isFlying) {
       if (flyUp) playerMesh.position.y += flyingSpeed;
@@ -1087,33 +1172,105 @@ function handlePlayerMovement() {
     // Add to the projectiles array for updates
     projectiles.push({ mesh: sphereMesh, body: sphereBody });
   });
-  function endGame() {
-    console.log('Game over: All obstacles destroyed!');
+  function clearScene() {
+    while (scene.children.length > 0) {
+      const object = scene.children[0];
+      scene.remove(object);
+  
+      // Dispose of geometry and materials to free memory
+      if (object.geometry) object.geometry.dispose();
+      if (object.material) {
+        if (Array.isArray(object.material)) {
+          object.material.forEach((mat) => mat.dispose());
+        } else {
+          object.material.dispose();
+        }
+      }
+    }
+  }
+  
+  function clearPhysicsWorld() {
+    world.bodies.forEach((body) => world.removeBody(body));
+  }
+  function endGame(isWinner) {
+    console.log('Game over!');
     isGameStarted = false;
-
+  
     // Pause the background music
     gameMusic.pause();
     gameMusic.currentTime = 0; // Reset to the beginning
-
-    // Display the game end screen
+  
+    // Emit the game end event to the server
+    socket.emit('endGame', { isWinner });
+  
+    // Handle the local player's game end screen
+    showEndGameScreen(isWinner);
+  }
+  
+  function showEndGameScreen(isWinner) {
+    // Get the end game screen elements
     const gameEndScreen = document.getElementById('gameEndScreen');
-    gameEndScreen.classList.remove('hidden'); // Show the end screen
+    const gameResultTitle = document.getElementById('gameResultTitle');
+    const gameResultMessage = document.getElementById('gameResultMessage');
+  
+    // Update the result screen based on whether the player won or lost
+    if (isWinner) {
+      gameResultTitle.textContent = "🏆 Congratulations!";
+      gameResultMessage.textContent = "You Won!";
+    } else {
+      gameResultTitle.textContent = "💔 Game Over";
+      gameResultMessage.textContent = "You Lost!";
+    }
+  
+    // Display the end game screen
+    gameEndScreen.classList.remove('hidden');
     gameEndScreen.classList.add('flex');
-
-    // Set up return to lobby button
-    const returnToLobbyButton = document.getElementById('returnToLobbyButton');
-    returnToLobbyButton.addEventListener('click', () => {
-      // Hide the end screen and show the lobby screen
-      gameEndScreen.classList.remove('flex');
+  
+    // Button Actions
+    document.getElementById('returnToTitleButton').addEventListener('click', () => {
+      gameEndScreen.classList.add('hidden');
+      titleScreen.style.display = 'flex';
+      resetGame();
+    });
+  
+    document.getElementById('playAgainButton').addEventListener('click', () => {
       gameEndScreen.classList.add('hidden');
       lobbyScreen.style.display = 'flex';
-
-      // Notify the server to reset the game for all players
-      socket.emit('returnToLobby', { lobbyCode });
-
-      // Reset any game-specific variables here if needed
+      resetGame();
+      socket.emit('playAgain', { lobbyCode });
     });
   }
+  
+  // Listen for the endGame event from the server
+  socket.on('endGame', ({ isWinner }) => {
+    console.log(`Game ended. You ${isWinner ? "won!" : "lost!"}`);
+    isGameStarted = false;
+
+    // Show the end game screen with the result
+    showEndGameScreen(isWinner);
+});
+  
+  function resetRenderer() {
+    renderer.clear();
+  }  
+  function resetGame() {
+    // Reset any game-specific variables here if needed
+    otherPlayers = {};
+    playersInLobby = [];
+    playerRole = '';
+    lobbyCode = '';
+  
+    // Clear projectiles and other objects
+    projectiles.forEach(({ mesh, body }) => {
+      if (scene.children.includes(mesh)) scene.remove(mesh);
+      if (world.bodies.includes(body)) world.removeBody(body);
+    });
+    projectiles = [];
+  
+    // Optionally clear chat or other UI elements
+    chatContainer.innerHTML = '';
+  }
+  
 
   socket.on('newPlayer', (data) => {
     addNewPlayer(data.id, { role: data.role });
@@ -1239,21 +1396,89 @@ socket.on('currentPlayers', (players) => {
 });
 
 function addNewPlayer(id, data) {
-  console.log(data, "HEHRHEHREHEH")
+  console.log(data, "Adding new player...");
   const loader = new GLTFLoader();
   loader.load(
-      data === 'Insect' ? 'assets/CharacterFly.glb' : 'assets/CharacterHuman.glb',
-      (gltf) => {
-          const model = gltf.scene;
-          model.scale.set(1, 1, 1);
-          model.position.set(0, 1, 0);
-          scene.add(model);
-          otherPlayers[id] = model;
-          console.log(`Added player ${id} as ${data}`);
-      },
-      undefined,
-      (error) => console.error(`Error loading model for player ${id}:`, error)
+    data === 'Insect' ? 'assets/CharacterFly.glb' : 'assets/CharacterHuman.glb',
+    (gltf) => {
+      // Load the player's 3D model
+      const model = gltf.scene;
+      model.scale.set(1, 1, 1);
+      model.position.set(0, 1, 0);
+      scene.add(model);
+
+      // Create a Cannon.js body for the player
+      const playerShape = new CANNON.Sphere(1 ); // Adjust radius as needed
+      const playerBody = new CANNON.Body({
+        mass: 5, // Dynamic body
+        shape: playerShape,
+        position: new CANNON.Vec3(0, 1, 0),
+        collisionFilterGroup: 0b01, // Player group
+        collisionFilterMask: 0b10 | 0b01, // Collides with projectiles and other players
+      });
+
+      // Add the physics body to the world
+      world.addBody(playerBody);
+
+      // Store the player in the otherPlayers object
+      otherPlayers[id] = {
+        mesh: model,
+        body: playerBody,
+        health: 100, // Initialize health
+      };
+
+      // Add health bar
+      createHealthBar(model);
+
+      // Synchronize the Three.js model with the physics body
+      const updateHitbox = () => {
+        model.position.copy(playerBody.position);
+        model.quaternion.copy(playerBody.quaternion);
+      };
+      otherPlayers[id].updateHitbox = updateHitbox;
+
+      console.log(`Added player ${id} as ${data}`);
+    },
+    undefined,
+    (error) => console.error(`Error loading model for player ${id}:`, error)
   );
+}
+function visualizePlayerHitbox(playerBody) {
+  // Create a wireframe box to represent the hitbox
+  const hitboxMaterial = new THREE.LineBasicMaterial({ color: 0xff0000 });
+  const hitboxGeometry = new THREE.BoxGeometry(2, 2, 2); // Adjust size as needed
+  const hitboxMesh = new THREE.LineSegments(
+    new THREE.EdgesGeometry(hitboxGeometry),
+    hitboxMaterial
+  );
+
+  // Sync the position and rotation of the hitbox with the player's body
+  const updateHitbox = () => {
+    hitboxMesh.position.copy(playerBody.position);
+    hitboxMesh.quaternion.copy(playerBody.quaternion);
+  };
+
+  // Add the hitbox to the scene
+  scene.add(hitboxMesh);
+
+  return updateHitbox;
+}
+
+function removePlayer(playerId) {
+  const playerMesh = otherPlayers[playerId];
+  if (playerMesh) {
+    scene.remove(playerMesh);
+    delete otherPlayers[playerId];
+    delete playerHealth[playerId];
+    delete healthBars[playerId];
+
+    console.log(`Player ${playerId} removed from game.`);
+  }
+
+  // Check if all insects are eliminated to end the game
+  if (Object.keys(otherPlayers).length === 0) {
+    endGame();
+  }
 }
 
   // Make chat visible when input is focused

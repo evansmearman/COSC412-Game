@@ -173,7 +173,25 @@
     </p>
   </div>
 </div>
-
+<!-- End Game Screen -->
+<div id="gameEndScreen" class="hidden flex flex-col items-center justify-center h-screen bg-gradient-to-br from-red-900 via-red-800 to-red-700 text-white">
+  <h1 id="gameResultTitle" class="text-5xl font-extrabold mb-6 animate-pulse tracking-wide">🎮 Game Over</h1>
+  <p id="gameResultMessage" class="text-lg mb-6 text-gray-200 italic">You Won!</p>
+  <div class="flex space-x-4 mt-8">
+    <button 
+      id="returnToTitleButton" 
+      class="px-8 py-3 rounded-lg bg-green-500 hover:bg-green-600 text-white text-lg font-semibold shadow-md transition"
+    >
+      Return to Title
+    </button>
+    <button 
+      id="playAgainButton" 
+      class="px-8 py-3 rounded-lg bg-yellow-500 hover:bg-yellow-400 text-black text-lg font-semibold shadow-md transition"
+    >
+      Play Again
+    </button>
+  </div>
+</div>
 <!-- Sign-In Screen -->
 <div id="signInScreen" class="flex flex-col items-center justify-center h-screen bg-gray-900 text-white hidden">
   <h2 class="text-4xl font-extrabold mb-6">Sign In</h2>
