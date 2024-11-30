@@ -40,44 +40,79 @@
   <audio id="gameMusic" src="assets/Juhani Junkala [Retro Game Music Pack] Level 1.mp3" loop></audio>
   <audio id="backgroundMusic" src="assets/theme1.mp3" loop></audio>
 
-  <!-- Title Screen -->
-  <div id="titleScreen" class="flex flex-col items-center justify-center h-screen bg-gradient-to-br from-green-900 via-green-800 to-green-700 text-white">
-    <h1 class="text-5xl font-extrabold mb-6 animate-pulse tracking-wide">🦟 Insect Invasion</h1>
-    <p class="text-lg mb-6 text-gray-200 italic">Choose your path in the ultimate bug battle!</p>
-    <div class="w-full max-w-sm mb-4">
-      <input 
-        id="playerNameInput" 
-        type="text" 
-        placeholder="Enter your name"
-        class="w-full px-4 py-3 text-black rounded-lg shadow-md focus:ring-4 focus:ring-yellow-400 outline-none"
-      />
-    </div>
-    <div class="space-x-4">
-      <button 
-        id="createLobbyButton" 
-        class="px-8 py-3 rounded-lg bg-yellow-500 hover:bg-yellow-400 text-black font-bold shadow-lg transform transition duration-300 hover:scale-105"
-      >
-        Create Lobby
-      </button>
-      <button 
-        id="joinLobbyButton" 
-        class="px-8 py-3 rounded-lg bg-blue-500 hover:bg-blue-400 text-white font-bold shadow-lg transform transition duration-300 hover:scale-105"
-      >
-        Join Lobby
-      </button>
-    </div>
-    <div class="w-full max-w-sm mt-6">
-      <input 
-        id="lobbyCodeInput" 
-        type="text" 
-        placeholder="Enter Lobby Code"
-        class="w-full px-4 py-3 text-black rounded-lg shadow-md focus:ring-4 focus:ring-yellow-400 outline-none"
-      />
-    </div>
-    <footer class="absolute bottom-4 text-sm text-gray-300">
-      © 2024 Insect Invasion. All rights reserved.
-    </footer>
+ <!-- Title Screen -->
+<div id="titleScreen" class="flex flex-col items-center justify-center h-screen bg-gradient-to-br from-green-900 via-green-800 to-green-700 text-white">
+  <h1 class="text-5xl font-extrabold mb-6 animate-pulse tracking-wide">🦟 Insect Invasion</h1>
+  <p class="text-lg mb-6 text-gray-200 italic">Choose your path in the ultimate bug battle!</p>
+  <div class="w-full max-w-sm mb-4">
+    <input 
+      id="playerNameInput" 
+      type="text" 
+      placeholder="Enter your name"
+      class="w-full px-4 py-3 text-black rounded-lg shadow-md focus:ring-4 focus:ring-yellow-400 outline-none"
+    />
   </div>
+  <div class="space-x-4">
+    <button 
+      id="createLobbyButton" 
+      class="px-8 py-3 rounded-lg bg-yellow-500 hover:bg-yellow-400 text-black font-bold shadow-lg transform transition duration-300 hover:scale-105"
+    >
+      Create Lobby
+    </button>
+    <button 
+      id="joinLobbyButton" 
+      class="px-8 py-3 rounded-lg bg-blue-500 hover:bg-blue-400 text-white font-bold shadow-lg transform transition duration-300 hover:scale-105"
+    >
+      Join Lobby
+    </button>
+  </div>
+  <div class="w-full max-w-sm mt-6">
+    <input 
+      id="lobbyCodeInput" 
+      type="text" 
+      placeholder="Enter Lobby Code"
+      class="w-full px-4 py-3 text-black rounded-lg shadow-md focus:ring-4 focus:ring-yellow-400 outline-none"
+    />
+  </div>
+  <button 
+    id="loginButton" 
+    class="mt-8 px-8 py-3 rounded-lg bg-green-500 hover:bg-green-600 text-white font-bold shadow-lg transform transition duration-300 hover:scale-105"
+  >
+    Login
+  </button>
+  <footer class="absolute bottom-4 text-sm text-gray-300">
+    © 2024 Insect Invasion. All rights reserved.
+  </footer>
+</div>
+
+<!-- Sign-In Screen -->
+<div id="signInScreen" class="hidden flex flex-col items-center justify-center h-screen bg-gray-900 text-white">
+  <h2 class="text-4xl font-extrabold mb-6">Sign In</h2>
+  <div class="w-full max-w-sm space-y-4">
+    <input 
+      id="signInEmail" 
+      type="email" 
+      placeholder="Enter your email" 
+      class="w-full px-4 py-3 text-black rounded-lg shadow-md focus:ring-4 focus:ring-blue-400 outline-none"
+    />
+    <input 
+      id="signInPassword" 
+      type="password" 
+      placeholder="Enter your password" 
+      class="w-full px-4 py-3 text-black rounded-lg shadow-md focus:ring-4 focus:ring-blue-400 outline-none"
+    />
+    <button 
+      id="signInButton" 
+      class="w-full px-8 py-3 rounded-lg bg-blue-500 hover:bg-blue-600 text-white font-bold shadow-lg transition"
+    >
+      Sign In
+    </button>
+    <p class="text-sm text-gray-300">
+      Don't have an account? 
+      <span id="goToSignUp" class="text-green-400 cursor-pointer">Sign Up</span>
+    </p>
+  </div>
+</div>
 
   <!-- Map Selection Screen -->
   <div id="mapSelectionScreen" class="hidden flex flex-col items-center justify-center h-screen bg-gray-900 text-white">

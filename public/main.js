@@ -54,9 +54,48 @@
   const players = {};
   let isGameStarted = false;
 
+  // Movement, control, and role variables
+  let playerSpeed = 10;
+  let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
+  let yaw = 0, pitch = 0;
+  let isJumping = false;
+  let verticalSpeed = 0;
+  const gravity = -0.02;
+  const jumpHeight = 0.5;
+  const groundLevel = 1;
+  let isFlying = false;
+  let flyUp = false, flyDown = false;
+  const flyingSpeed = 1;
 
+  // Store projectiles
+  let projectiles = [];
 
+  // Mouse movement for looking around
+  let mouseLocked = false;
 
+  const loginButton = document.getElementById('loginButton');
+  const signInScreen = document.getElementById('signInScreen');
+
+  loginButton.addEventListener('click', () => {
+    titleScreen.classList.add('hidden');
+    signInScreen.classList.remove('hidden');
+  });
+
+  // Transition to Sign-Up screen from Sign-In
+  const goToSignUp = document.getElementById('goToSignUp');
+  const signUpScreen = document.getElementById('signUpScreen');
+
+  goToSignUp.addEventListener('click', () => {
+    signInScreen.classList.add('hidden');
+    signUpScreen.classList.remove('hidden');
+  });
+
+  // Transition back to Sign-In from Sign-Up
+  const goToSignIn = document.getElementById('goToSignIn');
+  goToSignIn.addEventListener('click', () => {
+    signUpScreen.classList.add('hidden');
+    signInScreen.classList.remove('hidden');
+  });
   // Handle lobby creation
   createLobbyButton.addEventListener('click', () => {
     const playerName = playerNameInput.value.trim();
@@ -497,9 +536,9 @@ const loader = new GLTFLoader();
     'assets/Pickup Thunder.glb', // Path to the power-up GLB model
     (gltf) => {
       powerUpMesh = gltf.scene;
-      powerUpMesh.scale.set(100, 100, 100); // Adjust size
+      powerUpMesh.scale.set(10, 10, 10); // Adjust size
       powerUpMesh.position.copy(powerUpPosition);
-
+  
       // Enable shadows on power-up model
       powerUpMesh.traverse((child) => {
         if (child.isMesh) {
@@ -507,22 +546,23 @@ const loader = new GLTFLoader();
           child.receiveShadow = true;
         }
       });
-
+  
       // Add glow effect around the power-up
       const glowEffect = createGlowEffect(powerUpPosition);
       scene.add(glowEffect);
-
+  
+      // Add the power-up mesh to the scene
       scene.add(powerUpMesh);
-
+  
       // Play animation if the model has it
       if (gltf.animations && gltf.animations.length > 0) {
         animationMixer = new THREE.AnimationMixer(powerUpMesh);
         const action = animationMixer.clipAction(gltf.animations[0]); // Play the first animation
         action.play();
       }
-
+  
       // Add a small light for the power-up
-      const powerUpLight = new THREE.PointLight(0xffcc00, 3, 10);
+      const powerUpLight = new THREE.PointLight(0xffcc00, 3, 20); // Adjust intensity and range
       powerUpLight.castShadow = true; // Enable shadows from the light
       powerUpLight.position.copy(powerUpPosition);
       powerUpLight.shadow.mapSize.width = 512; // Resolution of shadow
@@ -530,19 +570,37 @@ const loader = new GLTFLoader();
       powerUpLight.shadow.camera.near = 1;
       powerUpLight.shadow.camera.far = 50;
       scene.add(powerUpLight);
+  
+      // Optional: Add a helper to visualize the light for debugging
+      const lightHelper = new THREE.PointLightHelper(powerUpLight, 5);
+      scene.add(lightHelper);
     },
     undefined,
     (error) => {
       console.error('Error loading power-up model:', error);
     }
   );
-  const powerUpShape = new CANNON.Sphere(5); // Match the size of the power-up
+  
+  // Create the Cannon.js sphere shape and body for the power-up
+  const powerUpShape = new CANNON.Sphere(10); // Match the size of the power-up
   const powerUpBody = new CANNON.Body({
     mass: 0, // Static body
     position: new CANNON.Vec3(powerUpPosition.x, powerUpPosition.y, powerUpPosition.z),
   });
   powerUpBody.addShape(powerUpShape);
   world.addBody(powerUpBody);
+  
+  // Optional: Visualize the Cannon.js body for debugging
+  const visualizePhysicsBody = () => {
+    const geometry = new THREE.SphereGeometry(10, 16, 16); // Match the shape's size
+    const material = new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true });
+    const wireframe = new THREE.Mesh(geometry, material);
+    wireframe.position.copy(powerUpPosition);
+    scene.add(wireframe);
+  };
+  
+  visualizePhysicsBody();
+  
 
   function checkPowerUpCollision() {
     const distance = playerMesh.position.distanceTo(powerUpMesh.position);
@@ -567,7 +625,7 @@ const loader = new GLTFLoader();
 
   function boostPlayerSpeed() {
     const originalSpeed = playerSpeed;
-    playerSpeed = 3; // Boosted speed
+    playerSpeed = 20; // Boosted speed
 
     // Reset speed after 7 seconds
     setTimeout(() => {
@@ -675,68 +733,6 @@ world.addBody(playerBody);
 
   }
 
-
-  // Obstacle setup with physics for Cannon.js
-      position: new CANNON.Vec3(obstacle.position.x, obstacle.position.y, obstacle.position.z),
-    });
-    obstacleBody.addShape(obstacleShape);
-  // const obstacleGeometry = new THREE.BoxGeometry(2, 2, 2);
-  // const obstacleMaterial = new THREE.MeshBasicMaterial({ color: 0x8B4513 });
-  // const obstacles = [];
-  // const obstacleBodies = []; // Store the obstacle bodies for physics
-  // const obstacleHealth = [];
-  // const healthBars = [];
-
-  // for (let i = 0; i < 0; i++) {
-  //   // Create the visual obstacle mesh in Three.js
-  //   const obstacle = new THREE.Mesh(obstacleGeometry, obstacleMaterial);
-  //   obstacle.position.set((Math.random() - 0.5) * 100, 0, (Math.random() - 0.5) * 100);
-  //   obstacle.castShadow = true; // Cast shadows
-  //   obstacle.receiveShadow = true; // Receive shadows
-  //   scene.add(obstacle);
-  //   obstacles.push(obstacle);
-
-  //   // Create the physics body for each obstacle in Cannon.js
-  //   const obstacleShape = new CANNON.Box(new CANNON.Vec3(1, 1, 1)); // Size matches Three.js obstacle
-  //   const obstacleBody = new CANNON.Body({
-  //     mass: 0, // Static obstacle
-  //     position: new CANNON.Vec3(obstacle.position.x, obstacle.position.y, obstacle.position.z),
-  //   });
-  //   obstacleBody.addShape(obstacleShape);
-  //   world.addBody(obstacleBody);
-  //   obstacleBodies.push(obstacleBody);
-
-  //   // Set initial health for each obstacle
-  //   obstacleHealth[i] = 100; // Example health value
-
-    // Create health bar for the obstacle
-  //   const healthBarGeometry = new THREE.PlaneGeometry(1.5, 0.2); // Adjust size as needed
-  //   const healthBarMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-  //   const healthBar = new THREE.Mesh(healthBarGeometry, healthBarMaterial);
-  //   healthBar.position.set(obstacle.position.x, obstacle.position.y + 1.5, obstacle.position.z);
-  //   healthBar.lookAt(camera.position); // Make it face the camera
-  //   scene.add(healthBar);
-  //   healthBars.push(healthBar);
-  // }
-
-  // Movement, control, and role variables
-  let playerSpeed = 1;
-  let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
-  let yaw = 0, pitch = 0;
-  let isJumping = false;
-  let verticalSpeed = 0;
-  const gravity = -0.02;
-  const jumpHeight = 0.5;
-  const groundLevel = 1;
-  let isFlying = false;
-  let flyUp = false, flyDown = false;
-  const flyingSpeed = 1;
-
-  // Store projectiles
-  let projectiles = [];
-
-  // Mouse movement for looking around
-  let mouseLocked = false;
   document.addEventListener('mousemove', (event) => {
     if (mouseLocked) {
         const sensitivity = 0.002;
@@ -869,7 +865,8 @@ world.addBody(playerBody);
       // Remove the sphere on collision
       removeProjectile(sphereMesh, sphereBody);
     });
-  
+    socket.emit('updateStats', { username: 'PlayerName', shotsFired: 1 });
+
     // Automatically remove the sphere after 10 seconds
     setTimeout(() => {
       removeProjectile(sphereMesh, sphereBody);
@@ -899,7 +896,7 @@ world.addBody(playerBody);
   
     const healthPercentage = Math.max(0, player.health / 100);
   
-    // Scale the health bar and update its color
+    // Update health bar and color
     const healthBar = healthBars[playerId];
     if (healthBar) {
       healthBar.scale.set(healthPercentage, 1, 1);
@@ -907,13 +904,11 @@ world.addBody(playerBody);
         healthPercentage > 0.5 ? 0x00ff00 : healthPercentage > 0.25 ? 0xffff00 : 0xff0000
       );
   
-      // If health is zero, remove the player
       if (healthPercentage <= 0) {
         removePlayer(playerId);
       }
     }
   }
-  
   // Function to remove a projectile
  
   // Function to create a particle effect at a collision position
@@ -1016,7 +1011,6 @@ playerBody.angularDamping = 0.9; // High damping reduces rotation significantly
 playerBody.fixedRotation = true;
 playerBody.updateMassProperties();
 function handlePlayerMovement() {
-  const playerSpeed = 10; // Adjust speed as needed
   const flySpeed = 5;
   // Reset horizontal velocity
   playerBody.velocity.x = 0;
@@ -1062,87 +1056,47 @@ function handlePlayerMovement() {
 }
 
 
-  function animate() {
-    if (!isGameStarted) return; // Stop the game loop if the game has ended
+function animate() {
+  if (!isGameStarted) return; // Stop the animation loop if the game is not started
 
-    requestAnimationFrame(animate);
+  requestAnimationFrame(animate); // Request the next frame
 
-    try {
-      world.step(1 / 60);
+  try {
+    // Step the physics world
+    world.step(1 / 60); // Assuming a 60 FPS frame rate
 
-      // Debug to catch undefined body issues
-      world.bodies.forEach((body, index) => {
-        if (!body) {
-          console.warn(`Undefined body found at index ${index}`);
-        }
-      });
-
-    } catch (err) {
-      console.error('Physics simulation error:', err);
-    }
-  // Update glow effect if it exists
-  if (powerUpMesh) {
-    animateGlowEffect(powerUpMesh);
-  }
-    checkPowerUpCollision(); // Check collision with power-up
-    updateProjectiles();
-    handlePlayerMovement()
-    updatePlayerPhysics();
-    let direction = new THREE.Vector3();
-
-    direction.applyQuaternion(playerMesh.quaternion);
-    playerMesh.position.add(direction);
-    playerBody.position.copy(playerMesh.position);
-    playerBody.quaternion.copy(playerMesh.quaternion);  
-    // if (typeof keepPlayerWithinBounds === 'function') {
-    //   keepPlayerWithinBounds();
-    // }
-    // if (!isFlying) {
-    //   const groundLevel = playerBody.position.y > 0 ? 0 : boundingBox.min.y;
-    //   playerBody.position.y = Math.max(playerBody.position.y, groundLevel);
-    // }
-        // Sync player hitboxes
-        Object.values(otherPlayers).forEach((player) => {
-          if (player.updateHitbox) {
-            player.updateHitbox();
-          }
-        });
-    
-        // Sync projectile hitboxes
-        projectiles.forEach((projectile) => {
-          if (projectile.updateHitbox) {
-            projectile.updateHitbox();
-          }
-        });
-        Object.values(otherPlayers).forEach((player) => {
-          if (player.body) {
-            const updateHitbox = visualizePlayerHitbox(player.body);
-            player.updateHitbox = updateHitbox; // Store for later updates
-          }
-        });
-    keepPlayerWithinBounds()
-    if (isFlying) {
-      if (flyUp) playerMesh.position.y += flyingSpeed;
-      if (flyDown) playerMesh.position.y -= flyingSpeed;
-      playerMesh.position.y = Math.max(playerMesh.position.y, groundLevel);
-    } else {
-      // Handle gravity and jumping for non-flying players
-      if (isJumping) {
-        verticalSpeed += gravity;
-        playerMesh.position.y += verticalSpeed;
-        if (playerMesh.position.y <= groundLevel) {
-          playerMesh.position.y = groundLevel;
-          isJumping = false;
-          verticalSpeed = 0;
-        }
+    // Update all players
+    Object.values(otherPlayers).forEach((player) => {
+      if (player.updateHitbox) {
+        player.updateHitbox(); // Synchronize player model with physics
       }
-      playerMesh.position.y = Math.max(playerMesh.position.y, groundLevel);
-    }
 
-    // Sync player position with server
+      // Update player animations if a mixer is available
+      if (player.mixer) {
+        player.mixer.update(1 / 60); // Update animations at 60 FPS
+      }
+    });
+
+    // Update the local player
+    updatePlayerPhysics(); // Sync local player physics with the Three.js mesh
+    handlePlayerMovement(); // Apply movement inputs to the local player
+    keepPlayerWithinBounds(); // Ensure the player stays within the game boundaries
+
+    // Update projectiles
+    updateProjectiles(); // Sync projectile positions with physics and handle cleanup
+
+    // Check power-up collisions
+    checkPowerUpCollision(); // Handle power-up interactions
+
+    // Synchronize player position with the server
     socket.emit('move', { position: playerMesh.position, isFlying });
+
+    // Render the scene
     renderer.render(scene, camera);
+  } catch (err) {
+    console.error('Error in animation loop:', err);
   }
+}
 
 
 
@@ -1198,14 +1152,27 @@ function handlePlayerMovement() {
   
     // Pause the background music
     gameMusic.pause();
-    gameMusic.currentTime = 0; // Reset to the beginning
+    gameMusic.currentTime = 0;
   
-    // Emit the game end event to the server
-    socket.emit('endGame', { isWinner });
+    // Determine the result based on the local player's role
+    const playerWon = playerRole === 'Human' ? isWinner : !isWinner;
   
-    // Handle the local player's game end screen
-    showEndGameScreen(isWinner);
+    // Emit the result to the server
+    socket.emit('endGame', { isWinner: playerWon });
+    if (isWinner) {
+      socket.emit('updateStats', { username: 'PlayerName', wins: 1 });
+    }
+  
+    // Show the result for the local player
+    showEndGameScreen(playerWon);
   }
+  
+  socket.on('endGame', ({ isWinner }) => {
+    console.log(`Game ended. You ${isWinner ? "won!" : "lost!"}`);
+    isGameStarted = false;
+  
+    showEndGameScreen(isWinner);
+  });
   
   function showEndGameScreen(isWinner) {
     // Get the end game screen elements
@@ -1401,40 +1368,53 @@ function addNewPlayer(id, data) {
   loader.load(
     data === 'Insect' ? 'assets/CharacterFly.glb' : 'assets/CharacterHuman.glb',
     (gltf) => {
-      // Load the player's 3D model
       const model = gltf.scene;
-      model.scale.set(1, 1, 1);
+      model.scale.set(1, 1, 1); // Adjust scale based on your models
       model.position.set(0, 1, 0);
       scene.add(model);
 
-      // Create a Cannon.js body for the player
-      const playerShape = new CANNON.Sphere(1 ); // Adjust radius as needed
+      // Create the physics body
+      const playerShape = new CANNON.Sphere(1); // Adjust size for hitbox
       const playerBody = new CANNON.Body({
-        mass: 5, // Dynamic body
+        mass: 5, // Dynamic object
         shape: playerShape,
         position: new CANNON.Vec3(0, 1, 0),
         collisionFilterGroup: 0b01, // Player group
         collisionFilterMask: 0b10 | 0b01, // Collides with projectiles and other players
       });
-
-      // Add the physics body to the world
       world.addBody(playerBody);
 
-      // Store the player in the otherPlayers object
+      // Handle animations if available
+      let mixer = null;
+      if (gltf.animations && gltf.animations.length > 0) {
+        mixer = new THREE.AnimationMixer(model);
+        const action = mixer.clipAction(gltf.animations[0]); // Play the first animation
+        action.play();
+      }
+
+      // Store the player with their animations, health, and role
       otherPlayers[id] = {
         mesh: model,
         body: playerBody,
         health: 100, // Initialize health
+        role: data, // Role is 'Insect' or 'Human'
+        mixer, // Store the animation mixer
       };
 
-      // Add health bar
+      // Add a health bar above the player
       createHealthBar(model);
 
       // Synchronize the Three.js model with the physics body
       const updateHitbox = () => {
         model.position.copy(playerBody.position);
         model.quaternion.copy(playerBody.quaternion);
+
+        // Update animations if mixer is available
+        if (mixer) {
+          mixer.update(1 / 60); // Update at 60 FPS
+        }
       };
+
       otherPlayers[id].updateHitbox = updateHitbox;
 
       console.log(`Added player ${id} as ${data}`);
@@ -1443,6 +1423,7 @@ function addNewPlayer(id, data) {
     (error) => console.error(`Error loading model for player ${id}:`, error)
   );
 }
+
 function visualizePlayerHitbox(playerBody) {
   // Create a wireframe box to represent the hitbox
   const hitboxMaterial = new THREE.LineBasicMaterial({ color: 0xff0000 });
@@ -1463,11 +1444,10 @@ function visualizePlayerHitbox(playerBody) {
 
   return updateHitbox;
 }
-
 function removePlayer(playerId) {
-  const playerMesh = otherPlayers[playerId];
-  if (playerMesh) {
-    scene.remove(playerMesh);
+  const player = otherPlayers[playerId];
+  if (player) {
+    scene.remove(player.mesh);
     delete otherPlayers[playerId];
     delete playerHealth[playerId];
     delete healthBars[playerId];
@@ -1475,11 +1455,28 @@ function removePlayer(playerId) {
     console.log(`Player ${playerId} removed from game.`);
   }
 
-  // Check if all insects are eliminated to end the game
-  if (Object.keys(otherPlayers).length === 0) {
-    endGame();
-  }
+  checkWinConditions();
 }
+function checkWinConditions() {
+  let insectsAlive = 0;
+  let humanAlive = false;
+
+  Object.values(otherPlayers).forEach((player) => {
+    if (player.role === 'Insect' && player.health > 0) {
+      insectsAlive++;
+    } else if (player.role === 'Human' && player.health > 0) {
+      humanAlive = true;
+    }
+  });
+
+  if (!humanAlive) {
+    // Insects win
+    endGame(false); // Human loses
+  } else if (insectsAlive === 0) {
+    // Human wins
+    endGame(true); // Human wins
+  }
+} 
 
   // Make chat visible when input is focused
   if (chatInput && chatContainer) {
@@ -1541,4 +1538,18 @@ chatInput.addEventListener('blur', () => {
 
     renderer.setSize( window.innerWidth, window.innerHeight );
 
+  }
+  async function fetchStats(username) {
+    try {
+      const response = await fetch(`/stats/${username}`);
+      const stats = await response.json();
+      console.log('Player stats:', stats);
+  
+      // Display stats on the UI
+      document.getElementById('statsDisplay').textContent = `
+        Wins: ${stats.wins}, Shots Fired: ${stats.shotsFired}
+      `;
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    }
   }
