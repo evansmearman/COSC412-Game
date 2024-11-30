@@ -677,9 +677,6 @@ world.addBody(playerBody);
 
 
   // Obstacle setup with physics for Cannon.js
-      position: new CANNON.Vec3(obstacle.position.x, obstacle.position.y, obstacle.position.z),
-    });
-    obstacleBody.addShape(obstacleShape);
   // const obstacleGeometry = new THREE.BoxGeometry(2, 2, 2);
   // const obstacleMaterial = new THREE.MeshBasicMaterial({ color: 0x8B4513 });
   // const obstacles = [];
