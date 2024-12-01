@@ -42,7 +42,6 @@
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.setSize(window.innerWidth, window.innerHeight);
   document.body.appendChild(renderer.domElement);
-
   // Cannon.js world setup
   const world = new CANNON.World();
   world.gravity.set(0, -9.82, 0); // Apply gravity
@@ -75,12 +74,47 @@
 
   const loginButton = document.getElementById('loginButton');
   const signInScreen = document.getElementById('signInScreen');
-
   loginButton.addEventListener('click', () => {
     titleScreen.classList.add('hidden');
     signInScreen.classList.remove('hidden');
   });
-
+  const signUpUsername = document.getElementById('signUpUsername');
+  const signUpPassword = document.getElementById('signUpPassword');
+  const signUpButton = document.getElementById('signUpButton');
+  
+  signUpButton.addEventListener('click', async () => {
+    const username = signUpUsername.value.trim();
+    const password = signUpPassword.value.trim();
+  
+    if (!username || !password) {
+      alert('Please fill in all fields.');
+      return;
+    }
+  
+    try {
+      // Send sign-up request to the server
+      const response = await fetch('/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, password }),
+      });
+  
+      const result = await response.json();
+  
+      if (response.ok) {
+        alert('Sign-up successful! Please log in.');
+        signUpScreen.classList.add('hidden');
+        signInScreen.classList.remove('hidden');
+      } else {
+        alert(result.message || 'Sign-up failed.');
+      }
+    } catch (error) {
+      console.error('Error during sign-up:', error);
+      alert('An error occurred. Please try again.');
+    }
+  });
   // Transition to Sign-Up screen from Sign-In
   const goToSignUp = document.getElementById('goToSignUp');
   const signUpScreen = document.getElementById('signUpScreen');
@@ -328,6 +362,8 @@
  // Load the selected map
  loadMap(map).then(() => {
   console.log(`Map "${map}" loaded successfully.`);   
+
+  spawnPowerUps(5)
   }) // Hide the lobby screen
     lobbyScreen.style.display = 'none';
 
@@ -530,65 +566,56 @@ const loader = new GLTFLoader();
     glowMesh.scale.set(1.2, 1.2, 1.2); // Slightly larger than the power-up
     return glowMesh;
   }
-
+  const spawnBoundaries = {
+    xMin: -150, // Minimum x-coordinate
+    xMax: 175.9, // Maximum x-coordinate
+    yMin: 1, // Minimum y-coordinate (ground level)
+    yMax: 10, // Maximum y-coordinate
+    zMin: -178.8, // Minimum z-coordinate
+    zMax: 179, // Maximum z-coordinate
+  };
+  
   // Create and add the glow around the power-up
-  loader.load(
-    'assets/Pickup Thunder.glb', // Path to the power-up GLB model
-    (gltf) => {
-      powerUpMesh = gltf.scene;
-      powerUpMesh.scale.set(10, 10, 10); // Adjust size
-      powerUpMesh.position.copy(powerUpPosition);
-  
-      // Enable shadows on power-up model
-      powerUpMesh.traverse((child) => {
-        if (child.isMesh) {
-          child.castShadow = true;
-          child.receiveShadow = true;
-        }
-      });
-  
-      // Add glow effect around the power-up
-      const glowEffect = createGlowEffect(powerUpPosition);
-      scene.add(glowEffect);
-  
-      // Add the power-up mesh to the scene
-      scene.add(powerUpMesh);
-  
-      // Play animation if the model has it
-      if (gltf.animations && gltf.animations.length > 0) {
-        animationMixer = new THREE.AnimationMixer(powerUpMesh);
-        const action = animationMixer.clipAction(gltf.animations[0]); // Play the first animation
-        action.play();
+  const powerUps = []; // Array to store all power-up meshes and bodies
+
+function spawnPowerUps(count) {
+  for (let i = 0; i < count; i++) {
+    const position = new THREE.Vector3(
+      THREE.MathUtils.randFloat(spawnBoundaries.xMin, spawnBoundaries.xMax),
+      THREE.MathUtils.randFloat(spawnBoundaries.yMin, spawnBoundaries.yMax),
+      THREE.MathUtils.randFloat(spawnBoundaries.zMin, spawnBoundaries.zMax)
+    );
+
+    loader.load(
+      'assets/Pickup Thunder.glb', // Path to the power-up GLB model
+      (gltf) => {
+        const powerUpMesh = gltf.scene;
+        powerUpMesh.scale.set(5, 5, 5);
+        powerUpMesh.position.copy(position);
+        scene.add(powerUpMesh);
+
+        const powerUpShape = new CANNON.Sphere(10);
+        const powerUpBody = new CANNON.Body({
+          mass: 0,
+          position: new CANNON.Vec3(position.x, position.y, position.z),
+        });
+        powerUpBody.addShape(powerUpShape);
+        world.addBody(powerUpBody);
+
+        const glowEffect = createGlowEffect(powerUpPosition);
+        scene.add(glowEffect);
+
+        // Store mesh and body in the array
+        powerUps.push({ mesh: powerUpMesh, body: powerUpBody });
+      },
+      undefined,
+      (error) => {
+        console.error('Error loading power-up model:', error);
       }
-  
-      // Add a small light for the power-up
-      const powerUpLight = new THREE.PointLight(0xffcc00, 3, 20); // Adjust intensity and range
-      powerUpLight.castShadow = true; // Enable shadows from the light
-      powerUpLight.position.copy(powerUpPosition);
-      powerUpLight.shadow.mapSize.width = 512; // Resolution of shadow
-      powerUpLight.shadow.mapSize.height = 512;
-      powerUpLight.shadow.camera.near = 1;
-      powerUpLight.shadow.camera.far = 50;
-      scene.add(powerUpLight);
-  
-      // Optional: Add a helper to visualize the light for debugging
-      const lightHelper = new THREE.PointLightHelper(powerUpLight, 5);
-      scene.add(lightHelper);
-    },
-    undefined,
-    (error) => {
-      console.error('Error loading power-up model:', error);
-    }
-  );
-  
-  // Create the Cannon.js sphere shape and body for the power-up
-  const powerUpShape = new CANNON.Sphere(10); // Match the size of the power-up
-  const powerUpBody = new CANNON.Body({
-    mass: 0, // Static body
-    position: new CANNON.Vec3(powerUpPosition.x, powerUpPosition.y, powerUpPosition.z),
-  });
-  powerUpBody.addShape(powerUpShape);
-  world.addBody(powerUpBody);
+    );
+  }
+}
+
   
   // Optional: Visualize the Cannon.js body for debugging
   const visualizePhysicsBody = () => {
@@ -603,26 +630,45 @@ const loader = new GLTFLoader();
   
 
   function checkPowerUpCollision() {
-    const distance = playerMesh.position.distanceTo(powerUpMesh.position);
-
-    // If player is near the power-up
-    if (distance < 2) {
-      collectPowerUp();
-    }
+    powerUps.forEach((powerUp, index) => {
+      if (!powerUp || !powerUp.mesh || !powerUp.body) return;
+  
+      // Adjust distance threshold to match power-up size
+      const distance = playerMesh.position.distanceTo(powerUp.mesh.position);
+      if (distance < 5) { // Adjust "5" based on power-up scale
+        collectPowerUp(index);
+      }
+    });
   }
-
-  function collectPowerUp() {
-    // Remove power-up from scene and physics world
-    scene.remove(powerUpMesh);
-    world.removeBody(powerUpBody);
-
-    // Boost player's speed
+  
+  
+  function collectPowerUp(index) {
+    const powerUp = powerUps[index];
+    if (!powerUp) return;
+  
+    // Add a visual effect
+    const effectGeometry = new THREE.SphereGeometry(5, 32, 32);
+    const effectMaterial = new THREE.MeshBasicMaterial({ color: 0xffcc00, transparent: true, opacity: 0.7 });
+    const effect = new THREE.Mesh(effectGeometry, effectMaterial);
+    effect.position.copy(powerUp.mesh.position);
+    scene.add(effect);
+  
+    setTimeout(() => {
+      scene.remove(effect);
+    }, 500); // Remove effect after 0.5 seconds
+  
+    // Remove power-up from scene and world
+    scene.remove(powerUp.mesh);
+    world.removeBody(powerUp.body);
+  
+    // Remove from array
+    powerUps.splice(index, 1);
+  
+    // Boost player speed
     boostPlayerSpeed();
-
-    // Optionally: Emit an event to the server
-    socket.emit('powerUpCollected', { playerId: socket.id });
+  
+    console.log(`Power-up collected: index ${index}`);
   }
-
   function boostPlayerSpeed() {
     const originalSpeed = playerSpeed;
     playerSpeed = 20; // Boosted speed
@@ -866,7 +912,7 @@ world.addBody(playerBody);
       removeProjectile(sphereMesh, sphereBody);
     });
     socket.emit('updateStats', { username: 'PlayerName', shotsFired: 1 });
-
+    // socket.emit('shoot', { position: sphereMesh.position, velocity: sphereBody.velocity });  
     // Automatically remove the sphere after 10 seconds
     setTimeout(() => {
       removeProjectile(sphereMesh, sphereBody);
@@ -1068,12 +1114,10 @@ function animate() {
     // Update all players
     Object.values(otherPlayers).forEach((player) => {
       if (player.updateHitbox) {
-        player.updateHitbox(); // Synchronize player model with physics
+        player.updateHitbox();
       }
-
-      // Update player animations if a mixer is available
       if (player.mixer) {
-        player.mixer.update(1 / 60); // Update animations at 60 FPS
+        player.mixer.update(1 / 60);
       }
     });
 
@@ -1086,7 +1130,10 @@ function animate() {
     updateProjectiles(); // Sync projectile positions with physics and handle cleanup
 
     // Check power-up collisions
-    checkPowerUpCollision(); // Handle power-up interactions
+      // Safely check power-up collisions
+      if (powerUps.length > 0) {
+        checkPowerUpCollision();
+      }  // Handle power-up interactions
 
     // Synchronize player position with the server
     socket.emit('move', { position: playerMesh.position, isFlying });
@@ -1300,8 +1347,8 @@ socket.on('currentPlayers', (players) => {
 
                 // Attach the camera to the insect model
                 playerMesh.add(camera);
-                camera.position.set(0, 0.5, -0.5); // Slightly above and forward of the insect's body
-                camera.rotation.set(0, Math.PI / 2, 0); // Reset camera rotation
+                camera.position.set(0, 2, 0); // Slightly above and forward of the insect's body
+                camera.rotation.set(0, Math.PI/1, 0); // Reset camera rotation
                 camera.rotation.order = "YXZ"; 
 
                 if (gltf.animations && gltf.animations.length > 0) {
@@ -1323,7 +1370,7 @@ socket.on('currentPlayers', (players) => {
                 const humanModel = gltf.scene;
                 humanModel.scale.set(1, 1, 1); // Adjust based on your model
                 humanModel.position.set(playerBody.position.x, playerBody.position.y, playerBody.position.z); // Align with physics body
-                humanModel.rotation.y = 0; // Default orientation
+                humanModel.rotation.set(0, 0, 0) // Default orientation
                 humanModel.traverse((child) => {
                     if (child.isMesh) {
                         child.castShadow = true;
@@ -1343,8 +1390,8 @@ socket.on('currentPlayers', (players) => {
 
                 // Attach the camera to the human model
                 playerMesh.add(camera);
-                camera.position.set(0, 70, -10); // Adjust camera position for human
-                camera.rotation.set(0, 0, 0); // Reset camera rotation
+                camera.position.set(0, 75, 8); // Adjust camera position for human
+                camera.rotation.set(0, Math.PI/1, 0); // Reset camera rotation
 
                 if (gltf.animations && gltf.animations.length > 0) {
                     humanMixer = new THREE.AnimationMixer(humanModel);
@@ -1369,12 +1416,13 @@ function addNewPlayer(id, data) {
     data === 'Insect' ? 'assets/CharacterFly.glb' : 'assets/CharacterHuman.glb',
     (gltf) => {
       const model = gltf.scene;
-      model.scale.set(1, 1, 1); // Adjust scale based on your models
-      model.position.set(0, 1, 0);
+      model.scale.set(data === 'Insect' ? 2: 1, data === 'Insect' ? 2: 1, data === 'Insect' ? 2: 1); // Adjust scale based on your models
+      model.position.set(0, 0, 0);
+
       scene.add(model);
 
       // Create the physics body
-      const playerShape = new CANNON.Sphere(1); // Adjust size for hitbox
+      const playerShape = new CANNON.Sphere(5); // Adjust size for hitbox
       const playerBody = new CANNON.Body({
         mass: 5, // Dynamic object
         shape: playerShape,
@@ -1383,12 +1431,16 @@ function addNewPlayer(id, data) {
         collisionFilterMask: 0b10 | 0b01, // Collides with projectiles and other players
       });
       world.addBody(playerBody);
-
+model.position.set(
+  playerBody.position.x,
+  playerBody.position.y,
+  playerBody.position.z
+);
       // Handle animations if available
       let mixer = null;
       if (gltf.animations && gltf.animations.length > 0) {
         mixer = new THREE.AnimationMixer(model);
-        const action = mixer.clipAction(gltf.animations[0]); // Play the first animation
+        const action = mixer.clipAction(gltf.animations[1]); // Play the first animation
         action.play();
       }
 
