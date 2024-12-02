@@ -2,7 +2,8 @@ import express from 'express';
 import http from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
-import { connectDB } from './public/db.js';
+// import { connectDB } from './public/db.js';
+// import { Player } from './models/player.js'; // Add this line to import the Player model
 
 const app = express();
 const server = http.createServer(app);
@@ -10,106 +11,109 @@ const io = new Server(server);
 
 app.use(cors());
 app.use(express.static('public'));
-app.use(express.json);
+app.use(express.json()); // Fix missing parentheses
 const LOBBY_SIZE = process.env.LOBBY_SIZE || 4;
-connectDB();
+// connectDB();
 
 // Data structures for managing lobbies and players
 let lobbies = {}; // { lobbyCode: { players: [], host: socketId, gameStarted: false } }
 let players = {}; // { socketId: { name: string, position: {x, y, z}, role: null, lobbyCode: string } }
-app.post('/register', async (req, res) => {
-    const { username, password } = req.body;
-    if (!username || !password) {
-        return res.status(400).json({ message: 'Username and password are required.' });
-    }
 
-    try {
-        const userExists = await User.findOne({ username });
-        if (userExists) {
-            return res.status(400).json({ message: 'Username already exists.' });
-        }
+// app.post('/register', async (req, res) => {
+//     const { username, password } = req.body;
+//     if (!username || !password) {
+//         return res.status(400).json({ message: 'Username and password are required.' });
+//     }
 
-        const user = new User({ username, password });
-        await user.save();
-        res.status(201).json({ message: 'User registered successfully.' });
-    } catch (error) {
-        console.error('Error during registration:', error);
-        res.status(500).json({ message: 'Server error.' });
-    }
-});
+//     try {
+//         const userExists = await User.findOne({ username });
+//         if (userExists) {
+//             return res.status(400).json({ message: 'Username already exists.' });
+//         }
 
-app.post('/login', async (req, res) => {
-    const { username, password } = req.body;
-    if (!username || !password) {
-        return res.status(400).json({ message: 'Username and password are required.' });
-    }
+//         const user = new User({ username, password });
+//         await user.save();
+//         res.status(201).json({ message: 'User registered successfully.' });
+//     } catch (error) {
+//         console.error('Error during registration:', error);
+//         res.status(500).json({ message: 'Server error.' });
+//     }
+// });
 
-    try {
-        const user = await User.findOne({ username });
-        if (!user || !(await user.comparePassword(password))) {
-            return res.status(400).json({ message: 'Invalid username or password.' });
-        }
+// app.post('/login', async (req, res) => {
+//     const { username, password } = req.body;
+//     if (!username || !password) {
+//         return res.status(400).json({ message: 'Username and password are required.' });
+//     }
 
-        res.status(200).json({ message: 'Login successful.' });
-    } catch (error) {
-        console.error('Error during login:', error);
-        res.status(500).json({ message: 'Server error.' });
-    }
-});
-app.post('/updateStats', async (req, res) => {
-    const { username, wins, shotsFired } = req.body;
+//     try {
+//         const user = await User.findOne({ username });
+//         if (!user || !(await user.comparePassword(password))) {
+//             return res.status(400).json({ message: 'Invalid username or password.' });
+//         }
+
+//         res.status(200).json({ message: 'Login successful.' });
+//     } catch (error) {
+//         console.error('Error during login:', error);
+//         res.status(500).json({ message: 'Server error.' });
+//     }
+// });
+
+// app.post('/updateStats', async (req, res) => {
+//     const { username, wins, shotsFired } = req.body;
   
-    try {
-      const player = await Player.findOneAndUpdate(
-        { username },
-        {
-          $inc: { wins: wins || 0, shotsFired: shotsFired || 0 },
-        },
-        { new: true, upsert: true } // Create a new record if the player doesn't exist
-      );
+//     try {
+//       const player = await Player.findOneAndUpdate(
+//         { username },
+//         {
+//           $inc: { wins: wins || 0, shotsFired: shotsFired || 0 },
+//         },
+//         { new: true, upsert: true } // Create a new record if the player doesn't exist
+//       );
   
-      res.status(200).json({ message: 'Stats updated successfully.', player });
-    } catch (error) {
-      console.error('Error updating stats:', error);
-      res.status(500).json({ message: 'Server error.' });
-    }
-  });
+//       res.status(200).json({ message: 'Stats updated successfully.', player });
+//     } catch (error) {
+//       console.error('Error updating stats:', error);
+//       res.status(500).json({ message: 'Server error.' });
+//     }
+//   });
   
-  // Endpoint to fetch stats
-  app.get('/stats/:username', async (req, res) => {
-    const { username } = req.params;
+//   // Endpoint to fetch stats
+//   app.get('/stats/:username', async (req, res) => {
+//     const { username } = req.params;
   
-    try {
-      const player = await Player.findOne({ username });
-      if (!player) {
-        return res.status(404).json({ message: 'Player not found.' });
-      }
+//     try {
+//       const player = await Player.findOne({ username });
+//       if (!player) {
+//         return res.status(404).json({ message: 'Player not found.' });
+//       }
   
-      res.status(200).json(player);
-    } catch (error) {
-      console.error('Error fetching stats:', error);
-      res.status(500).json({ message: 'Server error.' });
-    }
-  });
+//       res.status(200).json(player);
+//     } catch (error) {
+//       console.error('Error fetching stats:', error);
+//       res.status(500).json({ message: 'Server error.' });
+//     }
+//   });
+
 // Socket.io connection
 io.on('connection', (socket) => {
     console.log(`Player connected: ${socket.id}`);
-    socket.on('updateStats', async (data) => {
-        const { username, wins, shotsFired } = data;
+    // socket.on('updateStats', async (data) => {
+    //     const { username, wins, shotsFired } = data;
     
-        try {
-          const player = await Player.findOneAndUpdate(
-            { username },
-            {
-              $inc: { wins: wins || 0, shotsFired: shotsFired || 0 },
-            },
-            { new: true, upsert: true }
-          );
-          console.log(`Stats updated for player ${username}:`, player);
-        } catch (error) {
-          console.error('Error updating stats:', error);
-        }
-      });
+    //     try {
+    //       const player = await Player.findOneAndUpdate(
+    //         { username },
+    //         {
+    //           $inc: { wins: wins || 0, shotsFired: shotsFired || 0 },
+    //         },
+    //         { new: true, upsert: true }
+    //       );
+    //       console.log(`Stats updated for player ${username}:`, player);
+    //     } catch (error) {
+    //       console.error('Error updating stats:', error);
+    //     }
+    //   });
     // Handle lobby creation
     socket.on('createLobby', ({ playerName, lobbyCode }) => {
         if (!playerName || typeof playerName !== 'string' || playerName.trim().length === 0) {
@@ -227,20 +231,34 @@ io.on('connection', (socket) => {
     socket.on('move', (data) => {
         const player = players[socket.id];
         if (player && isValidPosition(data.position)) {
-            player.position = data.position;
-            io.to(player.lobbyCode).emit('playerMoved', { id: socket.id, position: data.position });
+            // Check for collisions with the map
+            if (!isCollidingWithMap(data.position)) {
+                if (player.role === 'Insect' || data.position.y === 0) { // Ensure only 'Insect' can fly
+                    player.position = data.position;
+                    io.to(player.lobbyCode).emit('playerMoved', { id: socket.id, position: data.position });
+                    console.log(`Player ${socket.id} moved to position:`, data.position); // Debugging log
+                }
+                if (player.role === 'Human' && data.position.y > 0) {
+                    player.position = data.position;
+                    io.to(player.lobbyCode).emit('playerMoved', { id: socket.id, position: data.position });
+                    console.log(`Player ${socket.id} moved to position:`, data.position); // Debugging log
+                }
+            }
         }
     });
-
+    
     // Handle shooting
     socket.on('shoot', (data) => {
         const player = players[socket.id];
         if (player && isValidPosition(data.position) && isValidPosition(data.velocity)) {
+            // Ensure the y-velocity is set correctly
+            data.velocity.y = Math.max(data.velocity.y, 0);
             io.to(player.lobbyCode).emit('shoot', {
                 id: socket.id,
                 position: data.position,
                 velocity: data.velocity,
             });
+            console.log(`Player ${socket.id} shot from position:`, data.position, 'with velocity:', data.velocity);
         }
     });
 
@@ -282,11 +300,11 @@ io.on('connection', (socket) => {
         delete lobbies[lobbyCode]
         
     })
-    socket.on('leaveLobby', (lobbyCode) =>{
+    socket.on('leaveLobby', () => { // Fix leaveLobby event handler
         console.log(`Player disconnected: ${socket.id}`);
         const player = players[socket.id];
         if (player) {
-             lobbyCode = player;
+            const lobbyCode = player.lobbyCode;
             const lobby = lobbies[lobbyCode];
 
             if (lobby) {
@@ -309,7 +327,7 @@ io.on('connection', (socket) => {
 
             delete players[socket.id];
         }
-    })
+    });
     // Handle player disconnection
     socket.on('disconnect', () => {
         console.log(`Player disconnected: ${socket.id}`);
@@ -408,6 +426,13 @@ function sanitizeMessage(message) {
 function getPlayerLobby(playerId) {
     const player = players[playerId];
     return player ? player.lobbyCode : null;
+}
+
+function isCollidingWithMap(position) {
+    // Implement collision detection logic with the map model
+    // Return true if the position collides with the map, otherwise false
+    // This is a placeholder function and should be implemented based on your map model
+    return false;
 }
 
 // Start the server
