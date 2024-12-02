@@ -42,7 +42,7 @@
   <audio id="backgroundMusic" src="assets/theme1.mp3" loop></audio>
 
  <!-- Title Screen -->
-<div id="titleScreen" class="flex flex-col items-center justify-center h-screen bg-gradient-to-br from-green-900 via-green-800 to-green-700 text-white">
+<div id="titleScreen" class="flex flex-col items-center justify-center h-screen bg-gradient-to-br from-green-900 via-green-800 to-green-700 text-white opacity-100 transition-opacity duration-500">
   <h1 class="text-5xl font-extrabold mb-6 animate-pulse tracking-wide">🦟 Insect Invasion</h1>
   <p class="text-lg mb-6 text-gray-200 italic">Choose your path in the ultimate bug battle!</p>
   <div class="w-full max-w-sm mb-4">
@@ -87,7 +87,7 @@
 </div>
 
 <!-- Sign-In Screen -->
-<div id="signInScreen" class="hidden flex flex-col items-center justify-center h-screen bg-gray-900 text-white">
+<div id="signInScreen" class="hidden flex flex-col items-center justify-center h-screen bg-gray-900 text-white opacity-0 transition-opacity duration-500">
   <h2 class="text-4xl font-extrabold mb-6">Sign In</h2>
   <div class="w-full max-w-sm space-y-4">
     <input 
@@ -116,7 +116,7 @@
 </div>
 
   <!-- Map Selection Screen -->
-  <div id="mapSelectionScreen" class="hidden flex flex-col items-center justify-center h-screen bg-gray-900 text-white">
+  <div id="mapSelectionScreen" class="hidden flex flex-col items-center justify-center h-screen bg-gray-900 text-white opacity-0 transition-opacity duration-500">
     <h2 class="text-4xl font-extrabold mb-6">Select a Map</h2>
     <div class="grid grid-cols-2 gap-4">
       <div 
@@ -154,7 +154,7 @@
   </div>
 
   <!-- Lobby Screen -->
-  <div id="lobbyScreen" class="hidden flex flex-col items-center justify-center h-screen bg-gray-900 text-white">
+  <div id="lobbyScreen" class="hidden flex flex-col items-center justify-center h-screen bg-gray-900 text-white opacity-0 transition-opacity duration-500">
     <h2 class="text-4xl font-extrabold mb-6">
       Lobby Code: 
       <span id="lobbyCodeDisplay" class="text-green-400">XXXXXX</span>
@@ -182,7 +182,7 @@
     </div>
   </div>
 <!-- Sign-Up Screen -->
-<div id="signUpScreen" class="flex flex-col items-center justify-center h-screen bg-gray-900 text-white hidden">
+<div id="signUpScreen" class="flex flex-col items-center justify-center h-screen bg-gray-900 text-white hidden opacity-0 transition-opacity duration-500">
   <h2 class="text-4xl font-extrabold mb-6">Sign Up</h2>
   <div class="w-full max-w-sm space-y-4">
     <input 
@@ -210,7 +210,7 @@
   </div>
 </div>
 <!-- End Game Screen -->
-<div id="gameEndScreen" class="hidden flex flex-col items-center justify-center h-screen bg-gradient-to-br from-red-900 via-red-800 to-red-700 text-white">
+<div id="gameEndScreen" class="hidden flex flex-col items-center justify-center h-screen bg-gradient-to-br from-red-900 via-red-800 to-red-700 text-white opacity-0 transition-opacity duration-500">
   <h1 id="gameResultTitle" class="text-5xl font-extrabold mb-6 animate-pulse tracking-wide">🎮 Game Over</h1>
   <p id="gameResultMessage" class="text-lg mb-6 text-gray-200 italic">You Won!</p>
   <div class="flex space-x-4 mt-8">

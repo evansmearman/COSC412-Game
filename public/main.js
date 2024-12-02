@@ -143,22 +143,33 @@ createLobbyButton.addEventListener('click', () => {
   socket.emit('createLobby', { playerName, lobbyCode });
 
   // Switch to the map selection screen
-  titleScreen.style.display = 'none';
-  mapSelectionScreen.classList.remove('hidden');
-  mapSelectionScreen.classList.add('flex');
+  titleScreen.classList.add('opacity-0', 'transition-opacity', 'duration-500');
+  setTimeout(() => {
+    titleScreen.classList.add('hidden');
+    mapSelectionScreen.classList.remove('hidden', 'opacity-0');
+    mapSelectionScreen.classList.add('flex', 'opacity-100', 'transition-opacity', 'duration-500');
+  }, 500);
 });
 
 // Handle back to lobby button
 backToLobbyButton.addEventListener('click', () => {
-  mapSelectionScreen.classList.add('hidden');
-  titleScreen.style.display = 'flex';
-  socket.emit('backToLobby', lobbyCode );
+  mapSelectionScreen.classList.add('opacity-0', 'transition-opacity', 'duration-500');
+  setTimeout(() => {
+    mapSelectionScreen.classList.add('hidden');
+    lobbyScreen.classList.remove('hidden', 'opacity-0');
+    lobbyScreen.classList.add('flex', 'opacity-100', 'transition-opacity', 'duration-500');
+  }, 500);
+  socket.emit('backToLobby', lobbyCode);
 });
 
 leaveLobbyButton.addEventListener('click', () =>{
-  socket.emit('leaveLobby', lobbyCode )
-  lobbyScreen.style.display = "none"
-  titleScreen.style.display = "flex"
+  lobbyScreen.classList.add('opacity-0', 'transition-opacity', 'duration-500');
+  setTimeout(() => {
+    lobbyScreen.classList.add('hidden');
+    titleScreen.classList.remove('hidden', 'opacity-0');
+    titleScreen.classList.add('flex', 'opacity-100', 'transition-opacity', 'duration-500');
+  }, 500);
+  socket.emit('leaveLobby', lobbyCode);
 })
 
 
@@ -190,17 +201,24 @@ joinLobbyButton.addEventListener('click', () => {
   socket.emit('joinLobby', { playerName, lobbyCode: code });
 
   // Switch to the lobby screen
-  titleScreen.style.display = 'none';
-  lobbyScreen.style.display = 'flex';
+  titleScreen.classList.add('opacity-0', 'transition-opacity', 'duration-500');
+  setTimeout(() => {
+    titleScreen.classList.add('hidden');
+    lobbyScreen.classList.remove('hidden', 'opacity-0');
+    lobbyScreen.classList.add('flex', 'opacity-100', 'transition-opacity', 'duration-500');
+  }, 500);
 });
 
 
 confirmMapButton.addEventListener('click', ()=>{
   socket.emit('mapSelected', { lobbyCode, map: selectedMap });   
-  mapSelectionScreen.style.display = "none"
-  lobbyScreen.style.display = "flex"
-  lobbyCodeDisplay.textContent = lobbyCode;
-
+  mapSelectionScreen.classList.add('opacity-0', 'transition-opacity', 'duration-500');
+  setTimeout(() => {
+    mapSelectionScreen.classList.add('hidden');
+    lobbyScreen.classList.remove('hidden', 'opacity-0');
+    lobbyScreen.classList.add('flex', 'opacity-100', 'transition-opacity', 'duration-500');
+    lobbyCodeDisplay.textContent = lobbyCode;
+  }, 500);
   })
   socket.on('mapSelected',({map})=>{
     finalMap = map
@@ -352,6 +370,7 @@ socket.on('lobbyUpdate', ({ players, host }) => {
 
 // Transition to game when it starts
 const gameMusic = document.getElementById('gameMusic');
+gameMusic.volume = 0.1;
 
 // Play music when the game starts
 socket.on('gameStart', (data) => {
@@ -365,7 +384,10 @@ console.log(`Map "${map}" loaded successfully.`);
 
 spawnPowerUps(5)
 }) // Hide the lobby screen
-  lobbyScreen.style.display = 'none';
+  lobbyScreen.classList.add('opacity-0', 'transition-opacity', 'duration-500');
+  setTimeout(() => {
+    lobbyScreen.classList.add('hidden');
+  }, 500);
 
   // Play background music
   gameMusic.play().catch((error) => {
@@ -1113,10 +1135,22 @@ function isCollidingWithMap(position) {
     return false;
 }
 
+let isWindowFocused = true;
+
+window.addEventListener('blur', () => {
+  isWindowFocused = false;
+});
+
+window.addEventListener('focus', () => {
+  isWindowFocused = true;
+});
+
 function animate() {
 if (!isGameStarted) return; // Stop the animation loop if the game is not started
 
 requestAnimationFrame(animate); // Request the next frame
+
+if (!isWindowFocused) return; // Pause the animation loop if the window is not focused
 
 try {
   // Step the physics world
@@ -1215,7 +1249,6 @@ function clearPhysicsWorld() {
 function endGame(isWinner) {
   console.log('Game over!');
   isGameStarted = false;
-
   // Pause the background music
   gameMusic.pause();
   gameMusic.currentTime = 0;
@@ -1262,21 +1295,29 @@ function showEndGameScreen(isWinner) {
   }
 
   // Display the end game screen
-  gameEndScreen.classList.remove('hidden');
-  gameEndScreen.classList.add('flex');
+  gameEndScreen.classList.remove('hidden', 'opacity-0');
+  gameEndScreen.classList.add('flex', 'opacity-100', 'transition-opacity', 'duration-500');
 
   // Button Actions
   document.getElementById('returnToTitleButton').addEventListener('click', () => {
-    gameEndScreen.classList.add('hidden');
-    titleScreen.style.display = 'flex';
-    resetGame();
+    gameEndScreen.classList.add('opacity-0', 'transition-opacity', 'duration-500');
+    setTimeout(() => {
+      gameEndScreen.classList.add('hidden');
+      titleScreen.classList.remove('hidden', 'opacity-0');
+      titleScreen.classList.add('flex', 'opacity-100', 'transition-opacity', 'duration-500');
+      resetGame();
+    }, 500);
   });
 
   document.getElementById('playAgainButton').addEventListener('click', () => {
-    gameEndScreen.classList.add('hidden');
-    lobbyScreen.style.display = 'flex';
-    resetGame();
-    socket.emit('playAgain', { lobbyCode });
+    gameEndScreen.classList.add('opacity-0', 'transition-opacity', 'duration-500');
+    setTimeout(() => {
+      gameEndScreen.classList.add('hidden');
+      lobbyScreen.classList.remove('hidden', 'opacity-0');
+      lobbyScreen.classList.add('flex', 'opacity-100', 'transition-opacity', 'duration-500');
+      resetGame();
+      socket.emit('playAgain', { lobbyCode });
+    }, 500);
   });
 }
 
