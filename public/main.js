@@ -5,11 +5,8 @@ import { io } from 'socket.io-client';
 import { nanoid } from 'nanoid';
 const socket = io();
 
-
-
-// Lobby and UI elements
 const titleScreen = document.getElementById('titleScreen');
-const lobbyScreen = document.querySelector('#lobbyScreen'); // Ensures proper selection
+const lobbyScreen = document.querySelector('#lobbyScreen');
 const playerNameInput = document.getElementById('playerNameInput');
 const createLobbyButton = document.getElementById('createLobbyButton');
 const joinLobbyButton = document.getElementById('joinLobbyButton');
@@ -21,39 +18,33 @@ const mapSelectionScreen = document.getElementById('mapSelectionScreen');
 const backToLobbyButton = document.getElementById('backToLobbyButton');
 const confirmMapButton = document.getElementById('confirmMapButton');
 const leaveLobbyButton = document.getElementById('leaveLobbyButton');
-const gameEndScreen = document.getElementById('gameEndScreen')
+const gameEndScreen = document.getElementById('gameEndScreen');
 let selectedMap = '';
-let finalMap = ''
-// Game variables
+let finalMap = '';
 let lobbyCode = '';
-
 let playersInLobby = [];
 let playerRole = '';
+let playerName = ''; // Add this line to store the player's name
 
-// Create Three.js scene
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(140, 255, 115);
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-const renderer = new THREE.WebGLRenderer( { antialias: true } );
-      renderer.setPixelRatio( window.devicePixelRatio );
-      renderer.setSize( window.innerWidth, window.innerHeight );
-      renderer.shadowMap.enabled = true;
-      renderer.shadowMap.type = THREE.PCFSoftShadowMap;;
-      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
-// Cannon.js world setup
+
+document.body.style.overflow = 'hidden';
+
 const world = new CANNON.World();
-world.gravity.set(0, -9.82, 0); // Apply gravity
+world.gravity.set(0, -9.82, 0);
 
-// Ammo.js physics setup
-
-
-// Game setup variables
 const players = {};
 let isGameStarted = false;
-
-// Movement, control, and role variables
 let playerSpeed = 10;
 let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
 let yaw = 0, pitch = 0;
@@ -65,71 +56,130 @@ const groundLevel = 1;
 let isFlying = false;
 let flyUp = false, flyDown = false;
 const flyingSpeed = 1;
-
-// Store projectiles
 let projectiles = [];
-
-// Mouse movement for looking around
 let mouseLocked = false;
 
-
-//Login
 const loginButton = document.getElementById('loginButton');
-const signInButton = document.getElementById('signInButton');
 const signInScreen = document.getElementById('signInScreen');
-const signInUsername = document.getElementById('signInUsername');
-const signInPassword = document.getElementById('signInPassword');
-
 loginButton.addEventListener('click', () => {
-  titleScreen.classList.add('hidden');
-  signInScreen.classList.remove('hidden');
+  titleScreen.classList.add('opacity-0', 'transition-opacity', 'duration-500');
+  setTimeout(() => {
+    titleScreen.classList.add('hidden');
+    signInScreen.classList.remove('hidden', 'opacity-0');
+    signInScreen.classList.add('flex', 'opacity-100', 'transition-opacity', 'duration-500');
+  }, 500);
 });
-
-signInButton.addEventListener('click', async () => {
-  const username = signInUsername.value.trim();
-  const password = signInPassword.value.trim();
-
-  if (!username || !password) {
-    alert('Please fill in all fields.');
-    return;
-  }
-  alert("Log In Successful")
-  signInScreen.classList.add('hidden');
-  titleScreen.classList.remove('hidden');
-
-});
-const signUpUsername = document.getElementById('signUpUsername');
+const signUpEmail = document.getElementById('signUpEmail'); // Fix element ID
 const signUpPassword = document.getElementById('signUpPassword');
 const signUpButton = document.getElementById('signUpButton');
 
 signUpButton.addEventListener('click', async () => {
-  const username = signUpUsername.value.trim();
+  if (!signUpEmail || !signUpPassword) { // Fix element ID
+    alert('Sign-up elements not found.');
+    return;
+  }
+  const email = signUpEmail.value.trim(); // Fix variable name
   const password = signUpPassword.value.trim();
 
-  if (!username || !password) {
+  if (!email || !password) { // Fix variable name
     alert('Please fill in all fields.');
     return;
   }
-  alert("Sign Up Successful! Please Log In")
-  signUpScreen.classList.add('hidden');
-  signInScreen.classList.remove('hidden');
+
+  try {
+    const response = await fetch('/register', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ username: email, password }), // Fix variable name
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      alert('Sign-up successful! Please log in.');
+      signUpScreen.classList.add('hidden');
+      signInScreen.classList.remove('hidden');
+    } else {
+      alert(result.message || 'Sign-up failed.');
+    }
+  } catch (error) {
+    console.error('Error during sign-up:', error);
+    alert('An error occurred. Please try again.');
+  }
 });
-// Transition to Sign-Up screen from Sign-In
+
 const goToSignUp = document.getElementById('goToSignUp');
 const signUpScreen = document.getElementById('signUpScreen');
 
 goToSignUp.addEventListener('click', () => {
-  signInScreen.classList.add('hidden');
-  signUpScreen.classList.remove('hidden');
+  signInScreen.classList.add('opacity-0', 'transition-opacity', 'duration-500');
+  setTimeout(() => {
+    signInScreen.classList.add('hidden');
+    signUpScreen.classList.remove('hidden', 'opacity-0');
+    signUpScreen.classList.add('flex', 'opacity-100', 'transition-opacity', 'duration-500');
+  }, 500);
 });
 
-// Transition back to Sign-In from Sign-Up
 const goToSignIn = document.getElementById('goToSignIn');
 goToSignIn.addEventListener('click', () => {
-  signUpScreen.classList.add('hidden');
-  signInScreen.classList.remove('hidden');
+  signUpScreen.classList.add('opacity-0', 'transition-opacity', 'duration-500');
+  setTimeout(() => {
+    signUpScreen.classList.add('hidden');
+    signInScreen.classList.remove('hidden', 'opacity-0');
+    signInScreen.classList.add('flex', 'opacity-100', 'transition-opacity', 'duration-500');
+  }, 500);
 });
-// Handle lobby creation
+
+const signInEmail = document.getElementById('signInEmail');
+const signInPassword = document.getElementById('signInPassword');
+const signInButton = document.getElementById('signInButton');
+
+signInButton.addEventListener('click', async () => {
+  if (!signInEmail || !signInPassword) {
+    alert('Sign-in elements not found.');
+    return;
+  }
+  const email = signInEmail.value.trim();
+  const password = signInPassword.value.trim();
+
+  if (!email || !password) {
+    alert('Please fill in all fields.');
+    return;
+  }
+
+  try {
+    const response = await fetch('/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ username: email, password }),
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      alert('Login successful!');
+      playerName = email; // Set the player's name to their username
+      // document.getElementById('playerNameDisplay').textContent = `Welcome, ${playerName}`; // Display the player's name
+      signInScreen.classList.add('opacity-0', 'transition-opacity', 'duration-500');
+      setTimeout(() => {
+        signInScreen.classList.add('hidden');
+        titleScreen.classList.remove('hidden', 'opacity-0');
+        titleScreen.classList.add('flex', 'opacity-100', 'transition-opacity', 'duration-500');
+        playerNameInput.value = `Hello, ${playerName}`; // Set the welcome message in the name input
+      }, 500);
+    } else {
+      alert(result.message || 'Login failed.');
+    }
+  } catch (error) {
+    console.error('Error during login:', error);
+    alert('An error occurred. Please try again.');
+  }
+});
+
 createLobbyButton.addEventListener('click', () => {
   const playerName = playerNameInput.value.trim();
   if (!playerName) {
@@ -137,11 +187,9 @@ createLobbyButton.addEventListener('click', () => {
     return;
   }
 
-  // Generate a lobby code and send a request to the server
   lobbyCode = nanoid(6).toUpperCase();
   socket.emit('createLobby', { playerName, lobbyCode });
 
-  // Switch to the map selection screen
   titleScreen.classList.add('opacity-0', 'transition-opacity', 'duration-500');
   setTimeout(() => {
     titleScreen.classList.add('hidden');
@@ -150,7 +198,6 @@ createLobbyButton.addEventListener('click', () => {
   }, 500);
 });
 
-// Handle back to lobby button
 backToLobbyButton.addEventListener('click', () => {
   mapSelectionScreen.classList.add('opacity-0', 'transition-opacity', 'duration-500');
   setTimeout(() => {
@@ -161,7 +208,7 @@ backToLobbyButton.addEventListener('click', () => {
   socket.emit('backToLobby', lobbyCode);
 });
 
-leaveLobbyButton.addEventListener('click', () =>{
+leaveLobbyButton.addEventListener('click', () => {
   lobbyScreen.classList.add('opacity-0', 'transition-opacity', 'duration-500');
   setTimeout(() => {
     lobbyScreen.classList.add('hidden');
@@ -169,8 +216,7 @@ leaveLobbyButton.addEventListener('click', () =>{
     titleScreen.classList.add('flex', 'opacity-100', 'transition-opacity', 'duration-500');
   }, 500);
   socket.emit('leaveLobby', lobbyCode);
-})
-
+});
 
 document.querySelectorAll('.map-option').forEach((mapOption) => {
   mapOption.addEventListener('click', () => {
@@ -179,14 +225,11 @@ document.querySelectorAll('.map-option').forEach((mapOption) => {
     });
     mapOption.classList.add('border-4', 'border-green-500');
     selectedMap = mapOption.dataset.map;
-
-    // Enable confirm button
     confirmMapButton.disabled = false;
-
-    // Display feedback
     console.log(`Selected map: ${selectedMap}`);
   });
 });
+
 joinLobbyButton.addEventListener('click', () => {
   const playerName = playerNameInput.value.trim();
   const code = lobbyCodeInput.value.trim().toUpperCase();
@@ -196,10 +239,8 @@ joinLobbyButton.addEventListener('click', () => {
     return;
   }
 
-  // Send a request to join the lobby
   socket.emit('joinLobby', { playerName, lobbyCode: code });
 
-  // Switch to the lobby screen
   titleScreen.classList.add('opacity-0', 'transition-opacity', 'duration-500');
   setTimeout(() => {
     titleScreen.classList.add('hidden');
@@ -208,9 +249,8 @@ joinLobbyButton.addEventListener('click', () => {
   }, 500);
 });
 
-
-confirmMapButton.addEventListener('click', ()=>{
-  socket.emit('mapSelected', { lobbyCode, map: selectedMap });   
+confirmMapButton.addEventListener('click', () => {
+  socket.emit('mapSelected', { lobbyCode, map: selectedMap });
   mapSelectionScreen.classList.add('opacity-0', 'transition-opacity', 'duration-500');
   setTimeout(() => {
     mapSelectionScreen.classList.add('hidden');
@@ -218,14 +258,12 @@ confirmMapButton.addEventListener('click', ()=>{
     lobbyScreen.classList.add('flex', 'opacity-100', 'transition-opacity', 'duration-500');
     lobbyCodeDisplay.textContent = lobbyCode;
   }, 500);
-  })
-  socket.on('mapSelected',({map})=>{
-    finalMap = map
-    console.log("Map selection complete")
-    console.log(map)
 });
-
-
+socket.on('mapSelected', ({ map }) => {
+  finalMap = map;
+  console.log("Map selection complete");
+  console.log(map);
+});
 
 function loadMap(map) {
   return new Promise((resolve, reject) => {
@@ -252,19 +290,15 @@ function loadMap(map) {
       (gltf) => {
         const glbScene = gltf.scene;
 
-        // Set scale and position
         glbScene.scale.set(scaleFactor, scaleFactor, scaleFactor);
         glbScene.position.y = positionY;
 
-        // Compute and log the bounding box
         const boundingBox = new THREE.Box3().setFromObject(glbScene);
         console.log("Bounding Box:", boundingBox.min, boundingBox.max);
 
-        // Add bounding box helper for debugging
         const boxHelper = new THREE.Box3Helper(boundingBox, 0xff0000);
         scene.add(boxHelper);
 
-        // Traverse the GLTF scene for physics bodies
         glbScene.traverse((child) => {
           if (child.isMesh) {
             child.castShadow = true;
@@ -272,32 +306,27 @@ function loadMap(map) {
 
             const geometry = child.geometry;
             if (geometry && geometry.attributes.position) {
-              // Extract vertices and indices for Trimesh
               const vertices = Array.from(geometry.attributes.position.array);
               const indices = geometry.index
                 ? Array.from(geometry.index.array)
                 : undefined;
 
-              // Scale vertices for Trimesh
               const scaledVertices = vertices.map((v, i) =>
                 i % 3 === 1 ? v * scaleFactor : v * scaleFactor
               );
 
-              // Apply world transformation
               const position = new THREE.Vector3();
               const quaternion = new THREE.Quaternion();
               const scale = new THREE.Vector3();
               child.updateMatrixWorld();
               child.matrixWorld.decompose(position, quaternion, scale);
 
-              // Create the Trimesh and physics body
               const trimesh = new CANNON.Trimesh(scaledVertices, indices);
               const body = new CANNON.Body({
-                mass: 0, // Static object
+                mass: 0,
                 shape: trimesh,
               });
 
-              // Position and rotate the body
               body.position.set(position.x, position.y, position.z);
               body.quaternion.set(
                 quaternion.x,
@@ -306,43 +335,33 @@ function loadMap(map) {
                 quaternion.w
               );
 
-              // Add to the physics world
               world.addBody(body);
 
-              // Optional visualization
               visualizeTrimesh(trimesh, scene, map);
-
-              // keepPlayerWithinBounds = enforceBoundariesFromTrimesh(trimesh, playerMesh, playerBody);
-
             }
           }
         });
 
-        // Add GLTF scene to Three.js scene
         scene.add(glbScene);
         console.log(`Map "${map}" loaded successfully.`);
-        resolve(); // Resolve after the map is fully loaded
+        resolve();
       },
-      undefined, // Optional: progress callback
+      undefined,
       (error) => {
-        reject(error); // Reject on error
+        reject(error);
       }
     );
   });
 }
 
-// Handle starting the game
 startGameButton.addEventListener('click', () => {
   console.log("hit")
   socket.emit('startGame', { lobbyCode });
 });
 
-// Update lobby UI when a new player joins
 socket.on('lobbyUpdate', ({ players, host }) => {
-  // Clear the existing player list
   playerList.innerHTML = '';
 
-  // Add each player to the list
   players.forEach((player) => {
     const listItem = document.createElement('li');
     listItem.className = 'flex items-center justify-between bg-gray-700 p-3 rounded-md';
@@ -355,7 +374,6 @@ socket.on('lobbyUpdate', ({ players, host }) => {
     playerList.appendChild(listItem);
   });
 
-  // Show "Start Game" button for the host
   if (socket.id === host) {
     startGameButton.style.display = 'block';
   } else {
@@ -365,35 +383,28 @@ socket.on('lobbyUpdate', ({ players, host }) => {
   console.log('Lobby updated:', players);
 });
 
-// Ensure lobbyScreen is selected correctly
-
-// Transition to game when it starts
 const gameMusic = document.getElementById('gameMusic');
 gameMusic.volume = 0.1;
 
-// Play music when the game starts
 socket.on('gameStart', (data) => {
   const { players, map } = data;
 
   console.log("Game starting event received:", data);
   isGameStarted = true;
-// Load the selected map
 loadMap(map).then(() => {
 console.log(`Map "${map}" loaded successfully.`);   
 
 spawnPowerUps(5)
-}) // Hide the lobby screen
+})
   lobbyScreen.classList.add('opacity-0', 'transition-opacity', 'duration-500');
   setTimeout(() => {
     lobbyScreen.classList.add('hidden');
   }, 500);
 
-  // Play background music
   gameMusic.play().catch((error) => {
     console.error("Error playing music:", error);
   });
 
-  // Add all players to the game
   players.forEach((player) => {
     if (player.id !== socket.id) {
       addNewPlayer(player.id, player.role);
@@ -402,15 +413,13 @@ spawnPowerUps(5)
     console.log(`Player ${player.name} loaded with role: ${player.role}`);
   });
 
-  // Start the game loop
+  chatContainer.style.display = 'flex'; // Show chat container when the game starts
+  chatInput.style.display = 'block'; // Show chat input when the game starts
+  chatInput.disabled = false; // Enable chat input when the game starts
+
   animate();
 });
 
-
-
-// Additional Three.js and Cannon.js game setup (same as existing code)
-
-// Synchronize player positions
 socket.on('updatePlayerPositions', (data) => {
   data.forEach(({ id, position }) => {
     if (id !== socket.id) {
@@ -418,13 +427,12 @@ socket.on('updatePlayerPositions', (data) => {
         players[id] = createPlayerMesh();
         scene.add(players[id]);
       }
-      players[id].position.set(position.x, position.y, position.z);
-      console.log(`Player ${id} moved to position:`, position); // Debugging log
+      players[id].position.set(position.x, players[id].position.y, position.z); // Only update x and z coordinates
+      console.log(`Player ${id} moved to position:`, position);
     }
   });
 });
 
-// Remove disconnected players
 socket.on('playerDisconnect', (id) => {
   if (otherPlayers[id]) {
       scene.remove(otherPlayers[id]);
@@ -438,10 +446,7 @@ function createPlayerMesh() {
   return new THREE.Mesh(geometry, material);
 }
 
-
-
-// Ground physics body for Cannon.js
-const groundBody = new CANNON.Body({ mass: 0 }); // Static ground
+const groundBody = new CANNON.Body({ mass: 0 });
 const groundShape = new CANNON.Plane();
 console.log(groundShape)
 groundBody.addShape(groundShape);
@@ -449,30 +454,28 @@ groundBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
 groundBody.position.set(0, -23, 0)
 world.addBody(groundBody);
 
-
-// Create chat container
 const chatContainer = document.createElement('div');
 chatContainer.style.position = 'fixed';
-chatContainer.style.bottom = '80px'; // Offset from the input
+chatContainer.style.bottom = '80px';
 chatContainer.style.left = '20px';
 chatContainer.style.width = '320px';
 chatContainer.style.height = '240px';
-chatContainer.style.backgroundColor = 'rgba(20, 20, 20, 0.9)'; // Darker and less transparent
-chatContainer.style.borderRadius = '12px'; // More rounded corners
-chatContainer.style.border = '2px solid #444'; // Softer border color
-chatContainer.style.overflowY = 'auto'; // Improved scrolling
+chatContainer.style.backgroundColor = 'rgba(20, 20, 20, 0.9)';
+chatContainer.style.borderRadius = '12px';
+chatContainer.style.border = '2px solid #444';
+chatContainer.style.overflowY = 'auto';
 chatContainer.style.padding = '15px';
-chatContainer.style.color = '#f0f0f0'; // Softer white text
+chatContainer.style.color = '#f0f0f0';
 chatContainer.style.fontSize = '14px';
 chatContainer.style.display = 'flex';
 chatContainer.style.flexDirection = 'column';
-chatContainer.style.gap = '10px'; // Add space between messages
-chatContainer.style.boxShadow = '0 8px 15px rgba(0, 0, 0, 0.6)'; // Subtle shadow
-chatContainer.style.transition = 'opacity 0.3s ease, transform 0.3s ease'; // Smooth opacity and scale transitions
-chatContainer.style.transform = 'scale(0.95)'; // Slightly smaller when idle
-chatContainer.style.opacity = '0.3'; // Initially transparent
+chatContainer.style.gap = '10px';
+chatContainer.style.boxShadow = '0 8px 15px rgba(0, 0, 0, 0.6)';
+chatContainer.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+chatContainer.style.transform = 'scale(0.95)';
+chatContainer.style.opacity = '0.3';
+chatContainer.style.display = 'none'; // Hide chat container initially
 
-// Add hover effect for interactivity
 chatContainer.addEventListener('mouseenter', () => {
 chatContainer.style.opacity = '1';
 chatContainer.style.transform = 'scale(1)';
@@ -484,35 +487,33 @@ chatContainer.style.transform = 'scale(0.95)';
 
 document.body.appendChild(chatContainer);
 
-// Create chat input box
 const chatInput = document.createElement('input');
 chatInput.style.position = 'fixed';
 chatInput.style.bottom = '20px';
 chatInput.style.left = '20px';
 chatInput.style.width = '320px';
-chatInput.style.height = '50px'; // Larger height for better usability
+chatInput.style.height = '50px';
 chatInput.style.padding = '10px';
-chatInput.style.backgroundColor = '#222'; // Dark background
-chatInput.style.color = '#f0f0f0'; // Softer white text
-chatInput.style.border = '2px solid #444'; // Softer border color
-chatInput.style.borderRadius = '12px'; // More rounded corners
-chatInput.style.outline = 'none'; // Remove default outline
+chatInput.style.backgroundColor = '#222';
+chatInput.style.color = '#f0f0f0';
+chatInput.style.border = '2px solid #444';
+chatInput.style.borderRadius = '12px';
+chatInput.style.outline = 'none';
 chatInput.style.fontSize = '16px';
-chatInput.style.boxShadow = '0 4px 10px rgba(0, 0, 0, 0.4)'; // Subtle shadow
-chatInput.style.transition = 'opacity 0.3s ease, transform 0.3s ease'; // Smooth transitions
-chatInput.style.transform = 'scale(0.95)'; // Slightly smaller when idle
-chatInput.style.opacity = '0.3'; // Initially transparent
+chatInput.style.boxShadow = '0 4px 10px rgba(0, 0, 0, 0.4)';
+chatInput.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+chatInput.style.transform = 'scale(0.95)';
+chatInput.style.opacity = '0.3';
 chatInput.placeholder = 'Type your message here...';
+chatInput.disabled = true; // Disable chat input initially
+chatInput.style.display = 'none'; // Hide chat input initially
 document.body.appendChild(chatInput);
 
-
-// Geometry and materials for player
 const geometry = new THREE.BoxGeometry();
 const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
 let playerMesh = new THREE.Mesh(geometry, material);
 scene.background = new THREE.Color(0x87CEEB);
 scene.add(playerMesh);
-
 
 function visualizeTrimesh(trimesh, scene, map) {
   const geometry = new THREE.BufferGeometry();
@@ -524,11 +525,10 @@ function visualizeTrimesh(trimesh, scene, map) {
   wireframe.visible = false
   scene.add(wireframe);
 
-  // Add collision body to the physics world
   const wiremeshBody = new CANNON.Body({
-      mass: 0, // Static object
-      collisionFilterGroup: 0b10, // Group for static objects
-      collisionFilterMask: 0b01, // Collides with players
+      mass: 0,
+      collisionFilterGroup: 0b10,
+      collisionFilterMask: 0b01,
   });
   wiremeshBody.addShape(new CANNON.Trimesh(trimesh.vertices, trimesh.indices));
   world.addBody(wiremeshBody);
@@ -536,28 +536,24 @@ function visualizeTrimesh(trimesh, scene, map) {
   return wiremeshBody;
 }
 
-
 function updatePlayerPhysics() {
 playerMesh.position.copy(playerBody.position);
 playerMesh.quaternion.copy(playerBody.quaternion);
 }
 
-
 const loader = new GLTFLoader();
 
-
-
 let powerUpMesh;
-const powerUpPosition = new THREE.Vector3((Math.random() - 0.5) * 100, 3, (Math.random() - 0.5) * 100); // Random position
+const powerUpPosition = new THREE.Vector3((Math.random() - 0.5) * 100, 3, (Math.random() - 0.5) * 100);
 
 function createGlowEffect(position) {
-  const glowGeometry = new THREE.SphereGeometry(3, 32, 32); // Larger than the power-up for the halo effect
+  const glowGeometry = new THREE.SphereGeometry(3, 32, 32);
   const glowMaterial = new THREE.ShaderMaterial({
     uniforms: {
       viewVector: { type: "v3", value: camera.position },
       c: { type: "f", value: 0.5 },
       p: { type: "f", value: 2.0 },
-      glowColor: { type: "c", value: new THREE.Color(0xffcc00) }, // Yellow glow
+      glowColor: { type: "c", value: new THREE.Color(0xffcc00) },
     },
     vertexShader: `
       uniform vec3 viewVector;
@@ -585,20 +581,19 @@ function createGlowEffect(position) {
 
   const glowMesh = new THREE.Mesh(glowGeometry, glowMaterial);
   glowMesh.position.copy(position);
-  glowMesh.scale.set(1.2, 1.2, 1.2); // Slightly larger than the power-up
+  glowMesh.scale.set(1.2, 1.2, 1.2);
   return glowMesh;
 }
 const spawnBoundaries = {
-  xMin: -150, // Minimum x-coordinate
-  xMax: 175.9, // Maximum x-coordinate
-  yMin: 1, // Minimum y-coordinate (ground level)
-  yMax: 10, // Maximum y-coordinate
-  zMin: -178.8, // Minimum z-coordinate
-  zMax: 179, // Maximum z-coordinate
+  xMin: -150,
+  xMax: 175.9,
+  yMin: 1,
+  yMax: 10,
+  zMin: -178.8,
+  zMax: 179,
 };
 
-// Create and add the glow around the power-up
-const powerUps = []; // Array to store all power-up meshes and bodies
+const powerUps = [];
 
 function spawnPowerUps(count) {
 for (let i = 0; i < count; i++) {
@@ -609,7 +604,7 @@ for (let i = 0; i < count; i++) {
   );
 
   loader.load(
-    'assets/Pickup Thunder.glb', // Path to the power-up GLB model
+    'assets/Pickup Thunder.glb',
     (gltf) => {
       const powerUpMesh = gltf.scene;
       powerUpMesh.scale.set(5, 5, 5);
@@ -627,7 +622,6 @@ for (let i = 0; i < count; i++) {
       const glowEffect = createGlowEffect(powerUpPosition);
       scene.add(glowEffect);
 
-      // Store mesh and body in the array
       powerUps.push({ mesh: powerUpMesh, body: powerUpBody });
     },
     undefined,
@@ -638,10 +632,8 @@ for (let i = 0; i < count; i++) {
 }
 }
 
-
-// Optional: Visualize the Cannon.js body for debugging
 const visualizePhysicsBody = () => {
-  const geometry = new THREE.SphereGeometry(10, 16, 16); // Match the shape's size
+  const geometry = new THREE.SphereGeometry(10, 16, 16);
   const material = new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true });
   const wireframe = new THREE.Mesh(geometry, material);
   wireframe.position.copy(powerUpPosition);
@@ -650,25 +642,21 @@ const visualizePhysicsBody = () => {
 
 visualizePhysicsBody();
 
-
 function checkPowerUpCollision() {
   powerUps.forEach((powerUp, index) => {
     if (!powerUp || !powerUp.mesh || !powerUp.body) return;
 
-    // Adjust distance threshold to match power-up size
     const distance = playerMesh.position.distanceTo(powerUp.mesh.position);
-    if (distance < 5) { // Adjust "5" based on power-up scale
+    if (distance < 5) {
       collectPowerUp(index);
     }
   });
 }
 
-
 function collectPowerUp(index) {
   const powerUp = powerUps[index];
   if (!powerUp) return;
 
-  // Add a visual effect
   const effectGeometry = new THREE.SphereGeometry(5, 32, 32);
   const effectMaterial = new THREE.MeshBasicMaterial({ color: 0xffcc00, transparent: true, opacity: 0.7 });
   const effect = new THREE.Mesh(effectGeometry, effectMaterial);
@@ -677,124 +665,100 @@ function collectPowerUp(index) {
 
   setTimeout(() => {
     scene.remove(effect);
-  }, 500); // Remove effect after 0.5 seconds
+  }, 500);
 
-  // Remove power-up from scene and world
   scene.remove(powerUp.mesh);
   world.removeBody(powerUp.body);
 
-  // Remove from array
   powerUps.splice(index, 1);
 
-  // Boost player speed
   boostPlayerSpeed();
 
   console.log(`Power-up collected: index ${index}`);
 }
 function boostPlayerSpeed() {
   const originalSpeed = playerSpeed;
-  playerSpeed = 20; // Boosted speed
+  playerSpeed = 20;
 
-  // Reset speed after 7 seconds
   setTimeout(() => {
     playerSpeed = originalSpeed;
   }, 7000);
 
-  // Optional: Visual feedback for speed boost
   console.log('Speed boost activated!');
 }
 function animateGlowEffect(glowMesh) {
-  const scale = 1 + 0.1 * Math.sin(Date.now() * 0.005); // Pulsating effect
+  const scale = 1 + 0.1 * Math.sin(Date.now() * 0.005);
   glowMesh.scale.set(scale, scale, scale);
 }
-// Renderer configuration for shadows
-renderer.shadowMap.enabled = true; // Enable shadows
-renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Use soft shadows for better quality
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-// Directional light with improved shadow configuration
 const dirLight = new THREE.DirectionalLight(0xffffff, 1);
 dirLight.color.setHSL(0.1, 1, 0.95);
 dirLight.position.set(-1, 1.75, 1).multiplyScalar(30);
 dirLight.castShadow = true;
 
-// Configure shadow map settings for directional light
-dirLight.shadow.mapSize.width = 2048; // Higher resolution shadow map
+dirLight.shadow.mapSize.width = 2048;
 dirLight.shadow.mapSize.height = 2048;
-const d = 10000; // Dimensions of shadow frustum
+const d = 10000;
 dirLight.shadow.camera.left = -d;
 dirLight.shadow.camera.right = d;
 dirLight.shadow.camera.top = d;
 dirLight.shadow.camera.bottom = -d;
-dirLight.shadow.camera.near = 1; // Near plane for shadows
-dirLight.shadow.camera.far = 1000; // Far plane for shadows
-dirLight.shadow.bias = -0.0001; // Bias to reduce shadow acne
+dirLight.shadow.camera.near = 1;
+dirLight.shadow.camera.far = 1000;
+dirLight.shadow.bias = -0.0001;
 scene.add(dirLight);
 
 const dirLightHelper = new THREE.DirectionalLightHelper(dirLight, 10);
 scene.add(dirLightHelper);
 
-// Hemisphere light for ambient lighting
 const hemiLight = new THREE.HemisphereLight(0x87CEEB, 0xffffff, 0.5);
 hemiLight.color.setHSL(0.6, 1, 0.6);
 hemiLight.groundColor.setHSL(0.0001, 1, 0.75);
 hemiLight.position.set(0, 50, 0);
 scene.add(hemiLight);
 
-// Enable shadows on the player mesh
 playerMesh.castShadow = true;
 playerMesh.receiveShadow = true;
 
-// Create a plane for the ground and enable shadows
 const groundGeometry = new THREE.PlaneGeometry(2000, 2000);
 const groundMaterial = new THREE.MeshStandardMaterial({ color: 0x808080 });
 const groundMesh = new THREE.Mesh(groundGeometry, groundMaterial);
-groundMesh.rotation.x = -Math.PI / 2; // Rotate the ground to lie flat
+groundMesh.rotation.x = -Math.PI / 2;
 groundMesh.position.y = -23;
-groundMesh.receiveShadow = true; // Enable shadows
+groundMesh.receiveShadow = true;
 scene.add(groundMesh);
 
-// Add shadows for obstacles
-
-
-
-// Store other players
 let otherPlayers = {};
 
-const spawnHeight = 0; // Adjust as needed to set initial spawn height above ground
-camera.position.set(0, spawnHeight+ 2, 0); // Place the camera at a height above ground
-playerMesh.position.set(0, spawnHeight, 0); // Place the player mesh at the same height
-playerMesh.castShadow = true; // Cast shadows
-playerMesh.receiveShadow = true; // Receive shadows
-playerMesh.add(camera); // Attach camera to player mesh
+const spawnHeight = 0;
+camera.position.set(0, spawnHeight+ 2, 0);
+playerMesh.position.set(0, spawnHeight, 0);
+playerMesh.castShadow = true;
+playerMesh.receiveShadow = true;
+playerMesh.add(camera);
 
-
-
-const playerRadius = 1; // Adjust to match the size of the player
+const playerRadius = 1;
 const playerBody = new CANNON.Body({
-mass: 5, // Dynamic object
-shape: new CANNON.Sphere(playerRadius),
-position: new CANNON.Vec3(0, spawnHeight + 1, 0),
-collisionFilterGroup: 0b01, // Group for players
-collisionFilterMask: 0b10,  // Collides with static objects
+    mass: 5,
+    shape: new CANNON.Sphere(playerRadius),
+    position: new CANNON.Vec3(0, spawnHeight + 1, 0),
+    collisionFilterGroup: 0b01,
+    collisionFilterMask: 0b10,
 });
 world.addBody(playerBody);
 
-// Sync Three.js mesh with Cannon.js body
-
-// Define boundary dimensions
 const boundary = { x: 124, y: 128.5, z: 138.6 };
 
-// Function to restrict player within bounds
 function keepPlayerWithinBounds() {
   const pos = playerMesh.position;
   
-  // Define different boundaries for -x and +x
-  const xMin = -150; // Boundary for -x
-  const xMax = 175.9;  // Boundary for +x
+  const xMin = -150;
+  const xMax = 175.9;
 
   const zMin = -178.8
   const zMax = 179
-  // Apply the boundaries
   pos.x = THREE.MathUtils.clamp(pos.x, xMin, xMax);
   pos.y = THREE.MathUtils.clamp(pos.y, 0, boundary.y);
   pos.z = THREE.MathUtils.clamp(pos.z, zMin, zMax);
@@ -807,12 +771,10 @@ document.addEventListener('mousemove', (event) => {
       yaw -= event.movementX * sensitivity;
       pitch -= event.movementY * sensitivity;
 
-      // Clamp pitch
       pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, pitch));
 
-      // Apply rotation to the camera and player body
-      playerBody.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), yaw); // Rotate player
-      camera.rotation.x = pitch; // Rotate camera
+      playerBody.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), yaw);
+      camera.rotation.x = pitch;
   }
 });
 document.addEventListener('click', () => {
@@ -864,83 +826,68 @@ window.addEventListener('mousedown', (event) => {
 function shootSphere() {
     const sphereRadius = 1.1;
     const sphereMass = 0.1;
-  
-    // Create the Three.js sphere mesh
     const sphereGeometry = new THREE.SphereGeometry(sphereRadius, 16, 16);
     const sphereMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
     const sphereMesh = new THREE.Mesh(sphereGeometry, sphereMaterial);
   
-    // Set the initial position of the sphere slightly in front of the player
     const startPosition = new THREE.Vector3();
-    camera.getWorldPosition(startPosition); // Get the camera's world position
+    camera.getWorldPosition(startPosition);
     const forwardDirection = new THREE.Vector3();
-    camera.getWorldDirection(forwardDirection); // Get the direction the camera is facing
-    sphereMesh.position.copy(startPosition.add(forwardDirection.multiplyScalar(3))); // Offset position forward
+    camera.getWorldDirection(forwardDirection);
+    sphereMesh.position.copy(startPosition.add(forwardDirection.multiplyScalar(3)));
   
-    // Add the sphere mesh to the scene
     scene.add(sphereMesh);
   
-    // Create the Cannon.js body for physics
     const sphereShape = new CANNON.Sphere(sphereRadius);
     const sphereBody = new CANNON.Body({
-      mass: sphereMass,
-      shape: sphereShape,
-      position: new CANNON.Vec3(
-        sphereMesh.position.x,
-        sphereMesh.position.y,
-        sphereMesh.position.z
-      ),
-      collisionFilterGroup: 0b10, // Projectiles group
-      collisionFilterMask: 0b01 | 0b10, // Collides with players and obstacles
+        mass: sphereMass,
+        shape: sphereShape,
+        position: new CANNON.Vec3(
+            sphereMesh.position.x,
+            sphereMesh.position.y,
+            sphereMesh.position.z
+        ),
+        collisionFilterGroup: 0b10,
+        collisionFilterMask: 0b01 | 0b10,
     });
   
     world.addBody(sphereBody);
   
-    // Set the sphere's velocity in the direction the camera is facing
-    const velocity = forwardDirection.multiplyScalar(150); // Adjust speed multiplier as needed
+    const velocity = forwardDirection.multiplyScalar(150);
     sphereBody.velocity.set(velocity.x, velocity.y, velocity.z);
   
-    // Store the projectile for updates
     projectiles.push({ mesh: sphereMesh, body: sphereBody });
   
-    // Collision handling for spheres
     sphereBody.addEventListener('collide', (event) => {
       const collidedBody = event.body;
   
-      // Check if it hit a player
       Object.values(otherPlayers).forEach((player) => {
         if (player.body === collidedBody) {
           const playerId = Object.keys(otherPlayers).find(
             (id) => otherPlayers[id].body === collidedBody
           );
   
-          // Reduce health and update health bar
-          player.health -= 20; // Decrease by 20 on each hit
+          player.health -= 20;
           updateHealthBar(playerId);
   
           console.log(`Player ${playerId} hit! Health: ${player.health}`);
   
-          // Create particle effect at the hit position
           createParticleEffect(player.mesh.position);
   
-          // Remove the player if health reaches zero
           if (player.health <= 0) {
             removePlayer(playerId);
           }
         }
       });
   
-      // Remove the sphere on collision
       removeProjectile(sphereMesh, sphereBody);
     });
     socket.emit('updateStats', { username: 'PlayerName', shotsFired: 1 });
-    // socket.emit('shoot', { position: sphereMesh.position, velocity: sphereBody.velocity });  
-    // Automatically remove the sphere after 10 seconds
     setTimeout(() => {
       removeProjectile(sphereMesh, sphereBody);
     }, 10000);
   }
-// Function to remove a projectile and its hitbox
+
 function removeProjectile(mesh, body, hitbox) {
   if (scene.children.includes(mesh)) {
     scene.remove(mesh);
@@ -952,7 +899,6 @@ function removeProjectile(mesh, body, hitbox) {
     world.removeBody(body);
   }
 
-  // Remove from the projectiles array
   projectiles = projectiles.filter((p) => p.body !== body);
 }
 
@@ -962,7 +908,6 @@ function updateHealthBar(playerId) {
 
   const healthPercentage = Math.max(0, player.health / 100);
 
-  // Update health bar and color
   const healthBar = healthBars[playerId];
   if (healthBar) {
     healthBar.scale.set(healthPercentage, 1, 1);
@@ -975,24 +920,21 @@ function updateHealthBar(playerId) {
     }
   }
 }
-// Function to remove a projectile
 
-// Function to create a particle effect at a collision position
 function createParticleEffect(position) {
   const particleCount = 30;
   const particles = new THREE.Group();
 
   for (let i = 0; i < particleCount; i++) {
     const particleGeometry = new THREE.SphereGeometry(0.05, 4, 4);
-    const particleMaterial = new THREE.MeshBasicMaterial({ color: 0x8B0000 }); // Dark red color for blood
+    const particleMaterial = new THREE.MeshBasicMaterial({ color: 0x8B0000 });
     const particle = new THREE.Mesh(particleGeometry, particleMaterial);
 
     particle.position.copy(position);
     
-    // Spread out horizontally with slight vertical variation for splatter effect
     particle.velocity = new THREE.Vector3(
-      (Math.random() - 0.5) * 4, // Wider horizontal spread
-      (Math.random() - 0.25) * 2, // Lower vertical spread
+      (Math.random() - 0.5) * 4,
+      (Math.random() - 0.25) * 2,
       (Math.random() - 0.5) * 4
     );
 
@@ -1001,19 +943,16 @@ function createParticleEffect(position) {
 
   scene.add(particles);
 
-  // Remove particles after some time
   setTimeout(() => {
     scene.remove(particles);
   }, 500);
 
-  // Animate particles to give a splattering effect
   const animateParticles = () => {
     particles.children.forEach((particle) => {
       particle.position.add(particle.velocity);
-      particle.material.opacity -= 0.03; // Fade out over time
+      particle.material.opacity -= 0.03;
     });
 
-    // Check if any particles still have opacity left to continue animation
     if (particles.children.some(p => p.material.opacity > 0)) {
       requestAnimationFrame(animateParticles);
     } else {
@@ -1027,15 +966,13 @@ const playerHealth = {};
 const healthBars = {};
 
 function createHealthBar(playerMesh, initialHealth = 100) {
-const barGeometry = new THREE.PlaneGeometry(1.5, 0.2); // Adjust size as needed
+const barGeometry = new THREE.PlaneGeometry(1.5, 0.2);
 const barMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
 const healthBar = new THREE.Mesh(barGeometry, barMaterial);
 
-// Position the health bar above the player
-healthBar.position.set(0, 1.5, 0); // Adjust height above the player
-playerMesh.add(healthBar); // Add as a child to player mesh
+healthBar.position.set(0, 1.5, 0);
+playerMesh.add(healthBar);
 
-// Initialize player health
 playerHealth[playerMesh.id] = initialHealth;
 healthBars[playerMesh.id] = healthBar;
 }
@@ -1044,17 +981,14 @@ function updateProjectiles() {
   for (let i = projectiles.length - 1; i >= 0; i--) {
     const projectile = projectiles[i];
 
-    // Skip undefined or incomplete projectiles
     if (!projectile || !projectile.mesh || !projectile.body) {
-      projectiles.splice(i, 1); // Remove invalid projectiles
+      projectiles.splice(i, 1);
       continue;
     }
 
-    // Synchronize the Three.js mesh with the Cannon.js body
     projectile.mesh.position.copy(projectile.body.position);
     projectile.mesh.quaternion.copy(projectile.body.quaternion);
 
-    // Remove projectiles that go out of bounds
     if (projectile.mesh.position.length() > 1000) {
       scene.remove(projectile.mesh);
       world.removeBody(projectile.body);
@@ -1062,34 +996,30 @@ function updateProjectiles() {
     }
   }
 }
-playerBody.collisionResponse = true; // Enable collision response
-playerBody.allowSleep = false; // Prevent the body from "sleeping"
-playerBody.collisionFilterGroup = 0b01; // Group for players
-playerBody.collisionFilterMask = 0b10; // Collides with static objects
-playerBody.linearDamping = 0.1; // Dampen velocity to reduce jitter
+playerBody.collisionResponse = true;
+playerBody.allowSleep = false;
+playerBody.collisionFilterGroup = 0b01;
+playerBody.collisionFilterMask = 0b10;
+playerBody.linearDamping = 0.1;
 
-// Enable CCD
-playerBody.ccdMotionThreshold = 1; // Threshold for motion-based collision
-playerBody.ccdSweptSphereRadius = playerRadius; // Swept radius to detect collisions
+playerBody.ccdMotionThreshold = 1;
+playerBody.ccdSweptSphereRadius = playerRadius;
 
-playerBody.angularDamping = 0.9; // High damping reduces rotation significantly
+playerBody.angularDamping = 0.9;
 
 playerBody.fixedRotation = true;
 playerBody.updateMassProperties();
 function handlePlayerMovement() {
     const flySpeed = 5;
-    // Reset horizontal velocity
     playerBody.velocity.x = 0;
     playerBody.velocity.z = 0;
 
-    // Get the camera's forward and right direction vectors
     const cameraDirection = new THREE.Vector3();
     camera.getWorldDirection(cameraDirection);
 
     const cameraRight = new THREE.Vector3();
     cameraRight.crossVectors(camera.up, cameraDirection).normalize();
 
-    // Compute movement based on input
     const moveDirection = new THREE.Vector3();
 
     if (moveForward) moveDirection.add(cameraDirection);
@@ -1097,40 +1027,30 @@ function handlePlayerMovement() {
     if (moveLeft) moveDirection.add(cameraRight);
     if (moveRight) moveDirection.add(cameraRight.negate());
 
-    // Normalize the movement direction vector (to prevent faster diagonal movement)
     if (moveDirection.length() > 0) {
         moveDirection.normalize();
         moveDirection.multiplyScalar(playerSpeed);
     }
 
-    // Vertical movement (flying) only for insects
     if (playerRole === 'Insect') {
         if (flyUp) moveDirection.y += flySpeed;
         if (flyDown) moveDirection.y -= flySpeed;
     }
 
-    // Check for collisions with the map
     const newPosition = new CANNON.Vec3().copy(playerBody.position).vadd(moveDirection);    if (!isCollidingWithMap(newPosition)) {
-        // Apply movement direction to the playerBody
         playerBody.velocity.x = moveDirection.x;
         playerBody.velocity.y = moveDirection.y;
         playerBody.velocity.z = moveDirection.z;
 
-        // Ensure movement stays horizontal (no vertical velocity changes) for non-flying players
         if (playerRole !== 'Insect') {
-            playerBody.velocity.y = 0; // Keep the player grounded
+            playerBody.velocity.y = 0;
         }
     }
 
-    // Prevent rotation
-    playerBody.angularVelocity.set(0, 0, 0); // Prevent angular motion
-    // console.log(`Player moved to position:`, playerBody.position); // Debugging log
+    playerBody.angularVelocity.set(0, 0, 0);
 }
 
 function isCollidingWithMap(position) {
-    // Implement collision detection logic with the map model
-    // Return true if the position collides with the map, otherwise false
-    // This is a placeholder function and should be implemented based on your map model
     return false;
 }
 
@@ -1145,17 +1065,15 @@ window.addEventListener('focus', () => {
 });
 
 function animate() {
-if (!isGameStarted) return; // Stop the animation loop if the game is not started
+if (!isGameStarted) return;
 
-requestAnimationFrame(animate); // Request the next frame
+requestAnimationFrame(animate);
 
-if (!isWindowFocused) return; // Pause the animation loop if the window is not focused
+if (!isWindowFocused) return;
 
 try {
-  // Step the physics world
-  world.step(1 / 60); // Assuming a 60 FPS frame rate
+  world.step(1 / 60);
 
-  // Update all players
   Object.values(otherPlayers).forEach((player) => {
     if (player.updateHitbox) {
       player.updateHitbox();
@@ -1165,72 +1083,57 @@ try {
     }
   });
 
-  // Update the local player
-  updatePlayerPhysics(); // Sync local player physics with the Three.js mesh
-  handlePlayerMovement(); // Apply movement inputs to the local player
-  keepPlayerWithinBounds(); // Ensure the player stays within the game boundaries
+  updatePlayerPhysics();
+  handlePlayerMovement();
+  keepPlayerWithinBounds();
 
-  // Update projectiles
-  updateProjectiles(); // Sync projectile positions with physics and handle cleanup
+  updateProjectiles();
 
-  // Check power-up collisions
-    // Safely check power-up collisions
-    if (powerUps.length > 0) {
-      checkPowerUpCollision();
-    }  // Handle power-up interactions
+  if (powerUps.length > 0) {
+    checkPowerUpCollision();
+  }
 
-  // Animate glow effects for power-ups
   powerUps.forEach((powerUp) => {
     if (powerUp.glowMesh) {
       animateGlowEffect(powerUp.glowMesh);
     }
   });
 
-  // Synchronize player position with the server
   socket.emit('move', { position: playerMesh.position, isFlying });
 
-  // Render the scene
   renderer.render(scene, camera);
 } catch (err) {
   console.error('Error in animation loop:', err);
 }
 }
 
-
-
 socket.on('shoot', (data) => {
-  const sphereRadius = 1.1; // Ensure this matches the shootSphere function
+  const sphereRadius = 1.1;
   const sphereMass = 0.1;
 
-  // Create the Three.js sphere mesh
   const sphereGeometry = new THREE.SphereGeometry(sphereRadius, 8, 8);
   const sphereMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
   const sphereMesh = new THREE.Mesh(sphereGeometry, sphereMaterial);
   sphereMesh.position.copy(data.position);
 
-  // Create the Cannon.js sphere body
   const sphereShape = new CANNON.Sphere(sphereRadius);
   const sphereBody = new CANNON.Body({ mass: sphereMass });
   sphereBody.addShape(sphereShape);
   sphereBody.position.set(data.position.x, data.position.y, data.position.z);
 
-  // Apply velocity from the data
-  sphereBody.velocity.set(data.velocity.x, Math.max(data.velocity.y, 0), data.velocity.z); // Ensure y-velocity is set correctly
+  sphereBody.velocity.set(data.velocity.x, Math.max(data.velocity.y, 0), data.velocity.z);
 
-  // Add the sphere to the physics world and scene
   world.addBody(sphereBody);
   scene.add(sphereMesh);
 
-  // Add to the projectiles array for updates
   projectiles.push({ mesh: sphereMesh, body: sphereBody });
-  console.log(`Player ${data.id} shot from position:`, data.position, 'with velocity:', data.velocity); // Debugging log
+  console.log(`Player ${data.id} shot from position:`, data.position, 'with velocity:', data.velocity);
 });
 function clearScene() {
   while (scene.children.length > 0) {
     const object = scene.children[0];
     scene.remove(object);
 
-    // Dispose of geometry and materials to free memory
     if (object.geometry) object.geometry.dispose();
     if (object.material) {
       if (Array.isArray(object.material)) {
@@ -1248,20 +1151,16 @@ function clearPhysicsWorld() {
 function endGame(isWinner) {
   console.log('Game over!');
   isGameStarted = false;
-  // Pause the background music
   gameMusic.pause();
   gameMusic.currentTime = 0;
 
-  // Determine the result based on the local player's role
   const playerWon = playerRole === 'Human' ? isWinner : !isWinner;
 
-  // Emit the result to the server
   socket.emit('endGame', { isWinner: playerWon });
   if (isWinner) {
     socket.emit('updateStats', { username: 'PlayerName', wins: 1 });
   }
 
-  // Show the result for the local player
   showEndGameScreen(playerWon);
 }
 
@@ -1273,19 +1172,16 @@ socket.on('endGame', ({ isWinner }) => {
 });
 
 function showEndGameScreen(isWinner) {
-  // Get the end game screen elements
   const gameEndScreen = document.getElementById('gameEndScreen');
   const gameResultTitle = document.getElementById('gameResultTitle');
   const gameResultMessage = document.getElementById('gameResultMessage');
 
-  // Update the result screen based on whether the player won or lost
   if (isWinner) {
     gameResultTitle.textContent = "🏆 Congratulations!";
     gameResultMessage.textContent = "You Won!";
-    // Trigger confetti effect
     confetti({
       particleCount: 100,
-      spread: 70,
+      spread: 100,
       origin: { y: 0.6 }
     });
   } else {
@@ -1293,11 +1189,9 @@ function showEndGameScreen(isWinner) {
     gameResultMessage.textContent = "You Lost!";
   }
 
-  // Display the end game screen
   gameEndScreen.classList.remove('hidden', 'opacity-0');
   gameEndScreen.classList.add('flex', 'opacity-100', 'transition-opacity', 'duration-500');
 
-  // Button Actions
   document.getElementById('returnToTitleButton').addEventListener('click', () => {
     gameEndScreen.classList.add('opacity-0', 'transition-opacity', 'duration-500');
     setTimeout(() => {
@@ -1320,12 +1214,10 @@ function showEndGameScreen(isWinner) {
   });
 }
 
-// Listen for the endGame event from the server
 socket.on('endGame', ({ isWinner }) => {
   console.log(`Game ended. You ${isWinner ? "won!" : "lost!"}`);
   isGameStarted = false;
 
-  // Show the end game screen with the result
   showEndGameScreen(isWinner);
 });
 
@@ -1333,23 +1225,19 @@ function resetRenderer() {
   renderer.clear();
 }  
 function resetGame() {
-  // Reset any game-specific variables here if needed
   otherPlayers = {};
   playersInLobby = [];
   playerRole = '';
   lobbyCode = '';
 
-  // Clear projectiles and other objects
   projectiles.forEach(({ mesh, body }) => {
     if (scene.children.includes(mesh)) scene.remove(mesh);
     if (world.bodies.includes(body)) world.removeBody(body);
   });
   projectiles = [];
 
-  // Optionally clear chat or other UI elements
   chatContainer.innerHTML = '';
 }
-
 
 socket.on('newPlayer', (data) => {
   addNewPlayer(data.id, { role: data.role });
@@ -1364,19 +1252,16 @@ socket.on('currentPlayers', (players) => {
   });
 });
 
-
-// ...existing code...
 socket.on('playerMoved', (data) => {
   const { id, position } = data;
   if (id !== socket.id && otherPlayers[id]) {
       console.log(position)
       otherPlayers[id].body.position.set(position.x, position.y, position.z);
-      otherPlayers[id].mesh.position.set(position.x, position.y, position.z); // Sync Three.js mesh position
-      console.log(`Player ${id} moved to position:`, position); // Debugging log
+      otherPlayers[id].mesh.position.set(position.x, position.y, position.z);
+      console.log(`Player ${id} moved to position:`, position);
 
   }
 });
-// ...existing code...
 
 socket.on('lobbyFull', () => {
   console.log('Lobby is full! Starting the game...');
@@ -1387,7 +1272,6 @@ socket.on('lobbyFull', () => {
   }, 1000);
 });
 
-// Create a role display element
 const roleDisplay = document.createElement('div');
 roleDisplay.style.position = 'fixed';
 roleDisplay.style.top = '20px';
@@ -1399,34 +1283,32 @@ roleDisplay.style.color = '#fff';
 roleDisplay.style.fontSize = '24px';
 roleDisplay.style.borderRadius = '8px';
 roleDisplay.style.zIndex = '1000';
-roleDisplay.style.display = 'none'; // Initially hidden
+roleDisplay.style.display = 'none';
 document.body.appendChild(roleDisplay);
 
-// Function to show the role display
 function showRoleDisplay(role) {
     roleDisplay.textContent = `You are a ${role}`;
     roleDisplay.style.display = 'block';
     setTimeout(() => {
         roleDisplay.style.display = 'none';
-    }, 5000); // Hide after 5 seconds
+    }, 5000);
 }
 
 socket.on('assignRole', (role) => {
   isFlying = role === 'Insect';
   const loader = new GLTFLoader();
 
-  // Show the role display
   showRoleDisplay(role);
 
   if (role === 'Insect') {
       let flyMixer;
       loader.load(
-          'assets/CharacterFly.glb', // Path to your fly model
+          'assets/CharacterFly.glb',
           (gltf) => {
               const flyModel = gltf.scene;
-              flyModel.scale.set(1, 1, 1); // Adjust based on your model
-              flyModel.position.set(playerBody.position.x, playerBody.position.y, playerBody.position.z); // Align with physics body
-              flyModel.rotation.y = Math.PI; // Rotate 180 degrees
+              flyModel.scale.set(1, 1, 1);
+              flyModel.position.set(playerBody.position.x, playerBody.position.y, playerBody.position.z);
+              flyModel.rotation.y = Math.PI;
               flyModel.traverse((child) => {
                   if (child.isMesh) {
                       child.castShadow = true;
@@ -1434,20 +1316,18 @@ socket.on('assignRole', (role) => {
                   }
               });
 
-              // Replace old player mesh
               if (playerMesh.parent) {
                   scene.remove(playerMesh);
               }
               playerMesh = flyModel;
               scene.add(playerMesh);
 
-              const shape = new CANNON.Box(new CANNON.Vec3(0.5, 0.2, 0.5)); // Adjust dimensions
+              const shape = new CANNON.Box(new CANNON.Vec3(0.5, 0.2, 0.5));
               playerBody.addShape(shape);
 
-              // Attach the camera to the insect model
               playerMesh.add(camera);
-              camera.position.set(0, 2, 0); // Slightly above and forward of the insect's body
-              camera.rotation.set(0, Math.PI/1, 0); // Reset camera rotation
+              camera.position.set(0, 2, 0);
+              camera.rotation.set(0, Math.PI/1, 0);
               camera.rotation.order = "YXZ"; 
 
               if (gltf.animations && gltf.animations.length > 0) {
@@ -1464,12 +1344,12 @@ socket.on('assignRole', (role) => {
   } else if (role === 'Human') {
       let humanMixer;
       loader.load(
-          'assets/CharacterHuman.glb', // Path to your human model
+          'assets/CharacterHuman.glb',
           (gltf) => {
               const humanModel = gltf.scene;
-              humanModel.scale.set(1, 1, 1); // Adjust based on your model
-              humanModel.position.set(playerBody.position.x, playerBody.position.y, playerBody.position.z); // Align with physics body
-              humanModel.rotation.set(0, 0, 0) // Default orientation
+              humanModel.scale.set(1, 1, 1);
+              humanModel.position.set(playerBody.position.x, playerBody.position.y, playerBody.position.z);
+              humanModel.rotation.set(0, 0, 0)
               humanModel.traverse((child) => {
                   if (child.isMesh) {
                       child.castShadow = true;
@@ -1477,20 +1357,18 @@ socket.on('assignRole', (role) => {
                   }
               });
 
-              // Replace old player mesh
               if (playerMesh.parent) {
                   scene.remove(playerMesh);
               }
               playerMesh = humanModel;
               scene.add(playerMesh);
 
-              const shape = new CANNON.Box(new CANNON.Vec3(0.5, 1, 0.5)); // Adjust dimensions for human
+              const shape = new CANNON.Box(new CANNON.Vec3(0.5, 1, 0.5));
               playerBody.addShape(shape);
 
-              // Attach the camera to the human model
               playerMesh.add(camera);
-              camera.position.set(0, 75, 8); // Adjust camera position for human
-              camera.rotation.set(0, Math.PI/1, 0); // Reset camera rotation
+              camera.position.set(0, 75, 8);
+              camera.rotation.set(0, Math.PI/1, 0);
 
               if (gltf.animations && gltf.animations.length > 0) {
                   humanMixer = new THREE.AnimationMixer(humanModel);
@@ -1508,7 +1386,6 @@ socket.on('assignRole', (role) => {
   console.log(`Player assigned role: ${role}`);
 });
 
-
 function addNewPlayer(id, data) {
 console.log(data, "Adding new player...");
 const loader = new GLTFLoader();
@@ -1516,54 +1393,49 @@ loader.load(
   data === 'Insect' ? 'assets/CharacterFly.glb' : 'assets/CharacterHuman.glb',
   (gltf) => {
     const model = gltf.scene;
-    model.scale.set(data === 'Insect' ? 2: 1, data === 'Insect' ? 2: 1, data === 'Insect' ? 2: 1); // Adjust scale based on your models
+    model.scale.set(data === 'Insect' ? 2: 1, data === 'Insect' ? 2: 1, data === 'Insect' ? 2: 1);
     model.position.set(0, 0, 0);
 
     scene.add(model);
 
-    // Create the physics body
-    const playerShape = new CANNON.Sphere(5); // Adjust size for hitbox
+    const playerShape = new CANNON.Sphere(5);
     const playerBody = new CANNON.Body({
-      mass: 5, // Dynamic object
-      shape: playerShape,
-      position: new CANNON.Vec3(0, 1, 0),
-      collisionFilterGroup: 0b01, // Player group
-      collisionFilterMask: 0b10 | 0b01, // Collides with projectiles and other players
+        mass: 5,
+        shape: playerShape,
+        position: new CANNON.Vec3(0, 1, 0),
+        collisionFilterGroup: 0b01,
+        collisionFilterMask: 0b10 | 0b01,
     });
     world.addBody(playerBody);
 model.position.set(
 playerBody.position.x,
 playerBody.position.y,
 playerBody.position.z
-);
-    // Handle animations if available
+    );
+
     let mixer = null;
     if (gltf.animations && gltf.animations.length > 0) {
       mixer = new THREE.AnimationMixer(model);
-      const action = mixer.clipAction(gltf.animations[1]); // Play the first animation
+      const action = mixer.clipAction(gltf.animations[1]);
       action.play();
     }
 
-    // Store the player with their animations, health, and role
     otherPlayers[id] = {
       mesh: model,
       body: playerBody,
-      health: 100, // Initialize health
-      role: data, // Role is 'Insect' or 'Human'
-      mixer, // Store the animation mixer
+      health: 100,
+      role: data,
+      mixer,
     };
 
-    // Add a health bar above the player
     createHealthBar(model);
 
-    // Synchronize the Three.js model with the physics body
     const updateHitbox = () => {
       model.position.copy(playerBody.position);
       model.quaternion.copy(playerBody.quaternion);
 
-      // Update animations if mixer is available
       if (mixer) {
-        mixer.update(1 / 60); // Update at 60 FPS
+        mixer.update(1 / 60);
       }
     };
 
@@ -1577,21 +1449,18 @@ playerBody.position.z
 }
 
 function visualizePlayerHitbox(playerBody) {
-// Create a wireframe box to represent the hitbox
 const hitboxMaterial = new THREE.LineBasicMaterial({ color: 0xff0000 });
-const hitboxGeometry = new THREE.BoxGeometry(2, 2, 2); // Adjust size as needed
+const hitboxGeometry = new THREE.BoxGeometry(2, 2, 2);
 const hitboxMesh = new THREE.LineSegments(
   new THREE.EdgesGeometry(hitboxGeometry),
   hitboxMaterial
 );
 
-// Sync the position and rotation of the hitbox with the player's body
 const updateHitbox = () => {
   hitboxMesh.position.copy(playerBody.position);
   hitboxMesh.quaternion.copy(playerBody.quaternion);
 };
 
-// Add the hitbox to the scene
 scene.add(hitboxMesh);
 
 return updateHitbox;
@@ -1622,15 +1491,12 @@ Object.values(otherPlayers).forEach((player) => {
 });
 
 if (!humanAlive) {
-  // Insects win
-  endGame(false); // Human loses
+  endGame(false);
 } else if (insectsAlive === 0) {
-  // Human wins
-  endGame(true); // Human wins
+  endGame(true);
 }
 } 
 
-// Make chat visible when input is focused
 if (chatInput && chatContainer) {
   chatInput.addEventListener('focus', () => {
     chatContainer.style.opacity = '1';
@@ -1639,7 +1505,6 @@ if (chatInput && chatContainer) {
     chatInput.style.transform = 'scale(1)';
   });
 }
-// Focus and blur animations
 
 chatInput.addEventListener('blur', () => {
 if (chatInput.value.trim() === '') {
@@ -1649,37 +1514,33 @@ if (chatInput.value.trim() === '') {
   chatInput.style.transform = 'scale(0.95)';
 }
 });
-// Listen for 'Enter' to focus the input field
+
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Enter' && document.activeElement !== chatInput) {
     chatInput.focus();
   }
 });
 
-// Send chat message on 'Enter' and unfocus input field
 chatInput.addEventListener('keydown', (event) => {
   if (event.key === 'Enter' && chatInput.value.trim() !== '') {
     const message = chatInput.value;
-    socket.emit('chatMessage', { id: socket.id, message }); // Send the message to the server
-    addChatMessage('Me', message); // Display your own message
-    chatInput.value = ''; // Clear the input box
-    chatInput.blur(); // Unfocus the input after sending
+    socket.emit('chatMessage', { id: socket.id, message });
+    addChatMessage('Me', message);
+    chatInput.value = '';
+    chatInput.blur();
   }
 });
 
-// Function to add a message to the chat
 function addChatMessage(sender, message) {
   const messageElement = document.createElement('div');
   messageElement.textContent = `${sender}: ${message}`;
   chatContainer.appendChild(messageElement);
-  chatContainer.scrollTop = chatContainer.scrollHeight; // Auto-scroll to the bottom
+  chatContainer.scrollTop = chatContainer.scrollHeight;
 }
 
-// Listen for incoming chat messages
   socket.on('chatMessage', (data) => {
       addChatMessage(`Player ${data.id}`, data.message);
   });
-
 
 window.addEventListener( 'resize', onWindowResize );
 

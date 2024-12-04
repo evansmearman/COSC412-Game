@@ -87,18 +87,18 @@
 </div>
 
 <!-- Sign-In Screen -->
-<div id="signInScreen" class="hidden flex flex-col items-center justify-center h-screen bg-gradient-to-br from-green-900 via-green-800 to-green-700 text-white opacity-100 transition-opacity duration-500">
+<div id="signInScreen" class="hidden flex flex-col items-center justify-center h-screen bg-gray-900 text-white opacity-0 transition-opacity duration-500">
   <h2 class="text-4xl font-extrabold mb-6">Sign In</h2>
   <div class="w-full max-w-sm space-y-4">
     <input 
-      id="signInUsername" 
-      type="text" 
-      placeholder="Enter your username" 
+      id="signInEmail" 
+      type="email" 
+      placeholder="Enter your email" 
       class="w-full px-4 py-3 text-black rounded-lg shadow-md focus:ring-4 focus:ring-blue-400 outline-none"
     />
     <input 
       id="signInPassword" 
-      type="text" 
+      type="password" 
       placeholder="Enter your password" 
       class="w-full px-4 py-3 text-black rounded-lg shadow-md focus:ring-4 focus:ring-blue-400 outline-none"
     />
@@ -182,18 +182,18 @@
     </div>
   </div>
 <!-- Sign-Up Screen -->
-<div id="signUpScreen" class="hidden flex flex-col items-center justify-center h-screen bg-gradient-to-br from-green-900 via-green-800 to-green-700 text-white opacity-100 transition-opacity duration-500">
+<div id="signUpScreen" class="flex flex-col items-center justify-center h-screen bg-gray-900 text-white hidden opacity-0 transition-opacity duration-500">
   <h2 class="text-4xl font-extrabold mb-6">Sign Up</h2>
   <div class="w-full max-w-sm space-y-4">
     <input 
-      id="signUpUsername" 
-      type="text" 
-      placeholder="Enter your username" 
+      id="signUpEmail" 
+      type="email" 
+      placeholder="Enter your email" 
       class="w-full px-4 py-3 text-black rounded-lg shadow-md focus:ring-4 focus:ring-green-400 outline-none"
     />
     <input 
       id="signUpPassword" 
-      type="text" 
+      type="password" 
       placeholder="Enter your password" 
       class="w-full px-4 py-3 text-black rounded-lg shadow-md focus:ring-4 focus:ring-green-400 outline-none"
     />
@@ -211,24 +211,53 @@
 </div>
 <!-- End Game Screen -->
 <div id="gameEndScreen" class="hidden flex flex-col items-center justify-center h-screen bg-gradient-to-br from-red-900 via-red-800 to-red-700 text-white opacity-0 transition-opacity duration-500">
-  <h1 id="gameResultTitle" class="text-5xl font-extrabold mb-6 animate-pulse tracking-wide">🎮 Game Over</h1>
-  <p id="gameResultMessage" class="text-lg mb-6 text-gray-200 italic">You Won!</p>
-  <div class="flex space-x-4 mt-8">
-    <button 
-      id="returnToTitleButton" 
-      class="px-8 py-3 rounded-lg bg-green-500 hover:bg-green-600 text-white text-lg font-semibold shadow-md transition"
-    >
-      Return to Title
-    </button>
-    <button 
-      id="playAgainButton" 
-      class="px-8 py-3 rounded-lg bg-yellow-500 hover:bg-yellow-400 text-black text-lg font-semibold shadow-md transition"
-    >
-      Play Again
-    </button>
+  <div class="bg-gray-800 bg-opacity-75 p-8 rounded-lg shadow-lg text-center">
+    <h1 id="gameResultTitle" class="text-5xl font-extrabold mb-6 animate-pulse tracking-wide">🎮 Game Over</h1>
+    <p id="gameResultMessage" class="text-lg mb-6 text-gray-200 italic">You Won!</p>
+    <div class="flex space-x-4 mt-8">
+      <button 
+        id="returnToTitleButton" 
+        class="px-8 py-3 rounded-lg bg-green-500 hover:bg-green-600 text-white text-lg font-semibold shadow-md transition transform hover:scale-105"
+      >
+        Return to Title
+      </button>
+      <button 
+        id="playAgainButton" 
+        class="px-8 py-3 rounded-lg bg-yellow-500 hover:bg-yellow-400 text-black text-lg font-semibold shadow-md transition transform hover:scale-105"
+      >
+        Play Again
+      </button>
+    </div>
   </div>
 </div>
-
+<!-- Sign-In Screen -->
+<div id="signInScreen" class="hidden flex flex-col items-center justify-center h-screen bg-gray-900 text-white opacity-0 transition-opacity duration-500">
+  <h2 class="text-4xl font-extrabold mb-6">Sign In</h2>
+  <div class="w-full max-w-sm space-y-4">
+    <input 
+      id="signInEmail" 
+      type="email" 
+      placeholder="Enter your email" 
+      class="w-full px-4 py-3 text-black rounded-lg shadow-md focus:ring-4 focus:ring-blue-400 outline-none"
+    />
+    <input 
+      id="signInPassword" 
+      type="password" 
+      placeholder="Enter your password" 
+      class="w-full px-4 py-3 text-black rounded-lg shadow-md focus:ring-4 focus:ring-blue-400 outline-none"
+    />
+    <button 
+      id="signInButton" 
+      class="w-full px-8 py-3 rounded-lg bg-blue-500 hover:bg-blue-600 text-white font-bold shadow-lg transition"
+    >
+      Sign In
+    </button>
+    <p class="text-sm text-gray-300">
+      Don't have an account? 
+      <span id="goToSignUp" class="text-green-400 cursor-pointer">Sign Up</span>
+    </p>
+  </div>
+</div>
   <!-- Game Scripts -->
   <script type="module" src="main.js"></script>
 </body>
