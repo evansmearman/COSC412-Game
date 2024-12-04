@@ -72,11 +72,31 @@ let projectiles = [];
 // Mouse movement for looking around
 let mouseLocked = false;
 
+
+//Login
 const loginButton = document.getElementById('loginButton');
+const signInButton = document.getElementById('signInButton');
 const signInScreen = document.getElementById('signInScreen');
+const signInUsername = document.getElementById('signInUsername');
+const signInPassword = document.getElementById('signInPassword');
+
 loginButton.addEventListener('click', () => {
   titleScreen.classList.add('hidden');
   signInScreen.classList.remove('hidden');
+});
+
+signInButton.addEventListener('click', async () => {
+  const username = signInUsername.value.trim();
+  const password = signInPassword.value.trim();
+
+  if (!username || !password) {
+    alert('Please fill in all fields.');
+    return;
+  }
+  alert("Log In Successful")
+  signInScreen.classList.add('hidden');
+  titleScreen.classList.remove('hidden');
+
 });
 const signUpUsername = document.getElementById('signUpUsername');
 const signUpPassword = document.getElementById('signUpPassword');
@@ -90,30 +110,9 @@ signUpButton.addEventListener('click', async () => {
     alert('Please fill in all fields.');
     return;
   }
-
-  try {
-    // Send sign-up request to the server
-    const response = await fetch('/signup', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ username, password }),
-    });
-
-    const result = await response.json();
-
-    if (response.ok) {
-      alert('Sign-up successful! Please log in.');
-      signUpScreen.classList.add('hidden');
-      signInScreen.classList.remove('hidden');
-    } else {
-      alert(result.message || 'Sign-up failed.');
-    }
-  } catch (error) {
-    console.error('Error during sign-up:', error);
-    alert('An error occurred. Please try again.');
-  }
+  alert("Sign Up Successful! Please Log In")
+  signUpScreen.classList.add('hidden');
+  signInScreen.classList.remove('hidden');
 });
 // Transition to Sign-Up screen from Sign-In
 const goToSignUp = document.getElementById('goToSignUp');
