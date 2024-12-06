@@ -6,7 +6,9 @@ import { nanoid } from 'nanoid';
 const socket = io();
 
 const titleScreen = document.getElementById('titleScreen');
+titleScreen.style.background = 'linear-gradient(to bottom, green, black)';
 const lobbyScreen = document.querySelector('#lobbyScreen');
+lobbyScreen.style.background = 'linear-gradient(to bottom, green, black)';
 const playerNameInput = document.getElementById('playerNameInput');
 const createLobbyButton = document.getElementById('createLobbyButton');
 const joinLobbyButton = document.getElementById('joinLobbyButton');
@@ -15,10 +17,12 @@ const lobbyCodeDisplay = document.getElementById('lobbyCodeDisplay');
 const playerList = document.getElementById('playerList');
 const startGameButton = document.getElementById('startGameButton');
 const mapSelectionScreen = document.getElementById('mapSelectionScreen');
+mapSelectionScreen.style.background = 'linear-gradient(to bottom, green, black)';
 const backToLobbyButton = document.getElementById('backToLobbyButton');
 const confirmMapButton = document.getElementById('confirmMapButton');
 const leaveLobbyButton = document.getElementById('leaveLobbyButton');
 const gameEndScreen = document.getElementById('gameEndScreen');
+gameEndScreen.style.background = 'linear-gradient(to bottom, green, black)';
 let selectedMap = '';
 let finalMap = '';
 let lobbyCode = '';
@@ -61,6 +65,7 @@ let mouseLocked = false;
 
 const loginButton = document.getElementById('loginButton');
 const signInScreen = document.getElementById('signInScreen');
+signInScreen.style.background = 'linear-gradient(to bottom, green, black)';
 loginButton.addEventListener('click', () => {
   titleScreen.classList.add('opacity-0', 'transition-opacity', 'duration-500');
   setTimeout(() => {
@@ -112,6 +117,7 @@ signUpButton.addEventListener('click', async () => {
 
 const goToSignUp = document.getElementById('goToSignUp');
 const signUpScreen = document.getElementById('signUpScreen');
+signUpScreen.style.background = 'linear-gradient(to bottom, green, black)';
 
 goToSignUp.addEventListener('click', () => {
   signInScreen.classList.add('opacity-0', 'transition-opacity', 'duration-500');
@@ -1630,3 +1636,18 @@ function createBackgroundAnimation() {
 }
 
 createBackgroundAnimation();
+
+const buttonClickSound = new Audio('assets/button-click.mp3');
+const buttonHoverSound = new Audio('assets/button-hover.mp3');
+
+function addButtonSoundEffects(button) {
+  button.addEventListener('click', () => {
+    buttonClickSound.play();
+  });
+  button.addEventListener('mouseover', () => {
+    buttonHoverSound.play();
+  });
+}
+
+// Apply sound effects to all buttons
+document.querySelectorAll('button').forEach(addButtonSoundEffects);
