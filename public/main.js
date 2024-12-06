@@ -180,6 +180,27 @@ signInButton.addEventListener('click', async () => {
   }
 });
 
+const returnToTitleFromSignIn = document.getElementById('returnToTitleFromSignIn');
+const returnToTitleFromSignUp = document.getElementById('returnToTitleFromSignUp');
+
+returnToTitleFromSignIn.addEventListener('click', () => {
+  signInScreen.classList.add('opacity-0', 'transition-opacity', 'duration-500');
+  setTimeout(() => {
+    signInScreen.classList.add('hidden');
+    titleScreen.classList.remove('hidden', 'opacity-0');
+    titleScreen.classList.add('flex', 'opacity-100', 'transition-opacity', 'duration-500');
+  }, 500);
+});
+
+returnToTitleFromSignUp.addEventListener('click', () => {
+  signUpScreen.classList.add('opacity-0', 'transition-opacity', 'duration-500');
+  setTimeout(() => {
+    signUpScreen.classList.add('hidden');
+    titleScreen.classList.remove('hidden', 'opacity-0');
+    titleScreen.classList.add('flex', 'opacity-100', 'transition-opacity', 'duration-500');
+  }, 500);
+});
+
 createLobbyButton.addEventListener('click', () => {
   const playerName = playerNameInput.value.trim();
   if (!playerName) {
@@ -1552,3 +1573,60 @@ function onWindowResize() {
   renderer.setSize( window.innerWidth, window.innerHeight );
 
 }
+
+function createBackgroundAnimation() {
+  const canvas = document.createElement('canvas');
+  canvas.id = 'backgroundCanvas';
+  canvas.style.position = 'absolute';
+  canvas.style.top = '0';
+  canvas.style.left = '0';
+  canvas.style.width = '100%';
+  canvas.style.height = '100%';
+  canvas.style.zIndex = '-1';
+  document.body.appendChild(canvas);
+
+  const ctx = canvas.getContext('2d');
+  const particles = [];
+  const particleCount = 100;
+
+  for (let i = 0; i < particleCount; i++) {
+    particles.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      radius: Math.random() * 3 + 1,
+      dx: Math.random() * 2 - 1,
+      dy: Math.random() * 2 - 1,
+    });
+  }
+
+  function drawParticles() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    particles.forEach((particle) => {
+      ctx.beginPath();
+      ctx.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+      ctx.fill();
+      ctx.closePath();
+    });
+  }
+
+  function updateParticles() {
+    particles.forEach((particle) => {
+      particle.x += particle.dx;
+      particle.y += particle.dy;
+
+      if (particle.x < 0 || particle.x > canvas.width) particle.dx *= -1;
+      if (particle.y < 0 || particle.y > canvas.height) particle.dy *= -1;
+    });
+  }
+
+  function animateParticles() {
+    drawParticles();
+    updateParticles();
+    requestAnimationFrame(animateParticles);
+  }
+
+  animateParticles();
+}
+
+createBackgroundAnimation();
