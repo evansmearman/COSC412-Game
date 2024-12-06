@@ -3,8 +3,13 @@ import http from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
 import { connectDB } from './public/db.js';
-import { User } from './models/user.js'; // Add this line to import the User model
+// import { User } from './models/user.js'; // Add this line to import the User model
 // import { Player } from './models/player.js'; // Add this line to import the Player model
+import path from 'path';
+import { fileURLToPath } from 'url'; // Add this line to import fileURLToPath
+
+const __filename = fileURLToPath(import.meta.url); // Add this line to get the filename
+const __dirname = path.dirname(__filename); // Add this line to get the directory name
 
 const app = express();
 const server = http.createServer(app);
@@ -16,48 +21,51 @@ app.use(express.json()); // Fix missing parentheses
 const LOBBY_SIZE = process.env.LOBBY_SIZE || 4;
 connectDB();
 
+// Serve the built files
+app.use(express.static(path.join(__dirname, 'dist')));
+
 // Data structures for managing lobbies and players
 let lobbies = {}; // { lobbyCode: { players: [], host: socketId, gameStarted: false } }
 let players = {}; // { socketId: { name: string, position: {x, y, z}, role: null, lobbyCode: string } }
 
 app.post('/register', async (req, res) => {
-    const { username, password } = req.body;
-    if (!username || !password) {
-        return res.status(400).json({ message: 'Username and password are required.' });
-    }
+    // const { username, password } = req.body;
+    // if (!username || !password) {
+    //     return res.status(400).json({ message: 'Username and password are required.' });
+    // }
 
-    try {
-        const userExists = await User.findOne({ username });
-        if (userExists) {
-            return res.status(400).json({ message: 'Username already exists.' });
-        }
+    // try {
+    //     const userExists = await User.findOne({ username });
+    //     if (userExists) {
+    //         return res.status(400).json({ message: 'Username already exists.' });
+    //     }
 
-        const user = new User({ username, password });
-        await user.save();
-        res.status(201).json({ message: 'User registered successfully.' });
-    } catch (error) {
-        console.error('Error during registration:', error);
-        res.status(500).json({ message: 'Server error.' });
-    }
+    //     const user = new User({ username, password });
+    //     await user.save();
+    //     res.status(201).json({ message: 'User registered successfully.' });
+    // } catch (error) {
+    //     console.error('Error during registration:', error);
+    //     res.status(500).json({ message: 'Server error.' });
+    // }
 });
 
 app.post('/login', async (req, res) => {
-    const { username, password } = req.body;
-    if (!username || !password) {
-        return res.status(400).json({ message: 'Username and password are required.' });
-    }
+    // const { username, password } = req.body;
+    // if (!username || !password) {
+    //     return res.status(400).json({ message: 'Username and password are required.' });
+    // }
 
-    try {
-        const user = await User.findOne({ username });
-        if (!user || !(await user.comparePassword(password))) {
-            return res.status(400).json({ message: 'Invalid username or password.' });
-        }
+    // try {
+    //     const user = await User.findOne({ username });
+    //     if (!user || !(await user.comparePassword(password))) {
+    //         return res.status(400).json({ message: 'Invalid username or password.' });
+    //     }
 
-        res.status(200).json({ message: 'Login successful.' });
-    } catch (error) {
-        console.error('Error during login:', error);
-        res.status(500).json({ message: 'Server error.' });
-    }
+    //     res.status(200).json({ message: 'Login successful.' });
+    // } catch (error) {
+    //     console.error('Error during login:', error);
+    //     res.status(500).json({ message: 'Server error.' });
+    // }
 });
 
 // app.post('/updateStats', async (req, res) => {

@@ -3,7 +3,7 @@ import * as CANNON from 'cannon-es';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { io } from 'socket.io-client';
 import { nanoid } from 'nanoid';
-const socket = io();
+const socket = io(); // Ensure this connects to the correct server
 
 const titleScreen = document.getElementById('titleScreen');
 titleScreen.style.background = 'linear-gradient(to bottom, green, black)';

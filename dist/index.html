@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Insect Invasion</title>
+  <script src="https://cdn.tailwindcss.com"></script> <!-- Tailwind CSS -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            background: '#1a202c',
+            button: '#4ade80',
+            buttonHover: '#22c55e',
+          },
+        },
+      },
+    };
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.156.1/build/three.module.js",
+        "three/examples/jsm/math/Capsule": "https://cdn.jsdelivr.net/npm/three@0.152.2/examples/jsm/math/Capsule.js",
+        "three/examples/jsm/math/Octree": "https://cdn.jsdelivr.net/npm/three@0.152.2/examples/jsm/math/Octree.js",
+        "three/examples/jsm/helpers/OctreeHelper": "https://cdn.jsdelivr.net/npm/three@0.152.2/examples/jsm/helpers/OctreeHelper.js",
+        "three/examples/jsm/loaders/GLTFLoader": "https://cdn.jsdelivr.net/npm/three@0.152.2/examples/jsm/loaders/GLTFLoader.js",
+        "three/examples/jsm/controls/PointerLockControls": "https://cdn.jsdelivr.net/npm/three@0.152.2/examples/jsm/controls/PointerLockControls.js",
+        "cannon-es": "https://cdn.jsdelivr.net/npm/cannon-es@0.18.0/dist/cannon-es.js",
+        "socket.io-client": "https://cdn.jsdelivr.net/npm/socket.io-client@4.5.1/dist/socket.io.esm.min.js",
+        "nanoid": "https://cdn.jsdelivr.net/npm/nanoid@4.0.0/nanoid.js",
+        "lil-gui": "https://cdn.jsdelivr.net/npm/lil-gui@0.18.1/dist/lil-gui.esm.min.js",
+        "ammo.js": "https://cdn.jsdelivr.net/npm/ammo-node@1.0.0/ammo.min.js",
+        "@enable3d/ammo-physics": "https://cdn.jsdelivr.net/npm/@enable3d/ammo-physics@0.25.4/dist/index.min.js"
+      }
+    }
+  </script>
+  <script type="module" crossorigin src="/assets/index-94713156.js"></script>
+</head>
+<body class="bg-background text-white font-sans">
+  <audio id="gameMusic" src="assets/Juhani Junkala [Retro Game Music Pack] Level 1.mp3" loop></audio>
+  <audio id="backgroundMusic" src="assets/theme1.mp3" loop></audio>
+  <audio id="buttonClickSound" src="assets/click.mp3"></audio>
+  <audio id="buttonHoverSound" src="assets/click.mp3"></audio>
+
+ <!-- Title Screen -->
+<div id="titleScreen" class="flex flex-col items-center justify-center h-screen bg-gradient-to-b from-green-900 to-black text-white opacity-100 transition-opacity duration-500">
+  <div class="text-center">
+    <h1 class="text-6xl font-extrabold mb-6 animate-pulse tracking-wide drop-shadow-lg">🦟 Insect Invasion</h1>
+    <p class="text-xl mb-6 text-gray-200 italic drop-shadow-md">Choose your path in the ultimate bug battle!</p>
+  </div>
+  <div class="w-full max-w-sm mb-4">
+    <input 
+      id="playerNameInput" 
+      type="text" 
+      placeholder="Enter your name"
+      class="w-full px-4 py-3 text-black rounded-lg shadow-md focus:ring-4 focus:ring-yellow-400 outline-none"
+    />
+  </div>
+  <div class="space-x-4">
+    <button 
+      id="createLobbyButton" 
+      class="px-8 py-3 rounded-lg bg-yellow-500 hover:bg-yellow-400 text-black font-bold shadow-lg transform transition duration-300 hover:scale-105"
+    >
+      Create Lobby
+    </button>
+    <button 
+      id="joinLobbyButton" 
+      class="px-8 py-3 rounded-lg bg-blue-500 hover:bg-blue-400 text-white font-bold shadow-lg transform transition duration-300 hover:scale-105"
+    >
+      Join Lobby
+    </button>
+  </div>
+  <div class="w-full max-w-sm mt-6">
+    <input 
+      id="lobbyCodeInput" 
+      type="text" 
+      placeholder="Enter Lobby Code"
+      class="w-full px-4 py-3 text-black rounded-lg shadow-md focus:ring-4 focus:ring-yellow-400 outline-none"
+    />
+  </div>
+  <button 
+    id="loginButton" 
+    class="mt-8 px-8 py-3 rounded-lg bg-green-500 hover:bg-green-600 text-white font-bold shadow-lg transform transition duration-300 hover:scale-105"
+  >
+    Login
+  </button>
+  <footer class="absolute bottom-4 text-sm text-gray-300">
+    © 2024 Insect Invasion. All rights reserved.
+  </footer>
+</div>
+
+<!-- Sign-In Screen -->
+<div id="signInScreen" class="hidden flex flex-col items-center justify-center h-screen bg-gradient-to-b from-green-900 to-black text-white opacity-0 transition-opacity duration-500">
+  <button 
+    id="returnToTitleFromSignIn" 
+    class="absolute top-4 right-4 px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white font-bold shadow-lg transition"
+  >
+    Return to Title
+  </button>
+  <h2 class="text-4xl font-extrabold mb-6">Sign In</h2>
+  <div class="w-full max-w-sm space-y-4">
+    <input 
+      id="signInEmail" 
+      type="email" 
+      placeholder="Enter your email" 
+      class="w-full px-4 py-3 text-black rounded-lg shadow-md focus:ring-4 focus:ring-blue-400 outline-none"
+    />
+    <input 
+      id="signInPassword" 
+      type="password" 
+      placeholder="Enter your password" 
+      class="w-full px-4 py-3 text-black rounded-lg shadow-md focus:ring-4 focus:ring-blue-400 outline-none"
+    />
+    <button 
+      id="signInButton" 
+      class="w-full px-8 py-3 rounded-lg bg-blue-500 hover:bg-blue-600 text-white font-bold shadow-lg transition"
+    >
+      Sign In
+    </button>
+    <p class="text-sm text-gray-300">
+      Don't have an account? 
+      <span id="goToSignUp" class="text-green-400 cursor-pointer">Sign Up</span>
+    </p>
+  </div>
+</div>
+
+  <!-- Map Selection Screen -->
+  <div id="mapSelectionScreen" class="hidden flex flex-col items-center justify-center h-screen bg-gradient-to-b from-green-900 to-black text-white opacity-0 transition-opacity duration-500">
+    <h2 class="text-4xl font-extrabold mb-6">Select a Map</h2>
+    <div class="grid grid-cols-2 gap-4">
+      <div 
+        class="map-option bg-cover bg-center rounded-lg shadow-lg cursor-pointer hover:scale-105 transition transform duration-300"
+        style="background-image: url('/assets/TN_Kitchen1-30179876.jpg'); width: 200px; height: 200px;"
+        data-map="Map1"
+      >
+        <p class="bg-black bg-opacity-50 text-white text-center p-2 rounded-b-lg">Kitchen</p>
+      </div>
+      <!-- <div 
+        class="map-option bg-cover bg-center rounded-lg shadow-lg cursor-pointer hover:scale-105 transition transform duration-300"
+        style="background-image: url('assets/apartment.PNG'); width: 200px; height: 200px;"
+        data-map="Map2"
+      >
+        <p class="bg-black bg-opacity-50 text-white text-center p-2 rounded-b-lg">Apartment</p>
+      </div> -->
+      
+     
+    </div>
+    <div class="flex space-x-4 mt-8">
+      <button 
+        id="backToLobbyButton" 
+        class="px-8 py-3 rounded-lg bg-red-500 hover:bg-red-600 text-white text-lg font-semibold shadow-md transition"
+      >
+        Back to Lobby
+      </button>
+      <button 
+        id="confirmMapButton" 
+        class="px-8 py-3 rounded-lg bg-green-500 hover:bg-green-600 text-white text-lg font-semibold shadow-md transition"
+        disabled
+      >
+        Confirm Map
+      </button>
+    </div>
+  </div>
+
+  <!-- Lobby Screen -->
+  <div id="lobbyScreen" class="hidden flex flex-col items-center justify-center h-screen bg-gradient-to-b from-green-900 to-black text-white opacity-0 transition-opacity duration-500">
+    <h2 class="text-4xl font-extrabold mb-6">
+      Lobby Code: 
+      <span id="lobbyCodeDisplay" class="text-green-400">XXXXXX</span>
+    </h2>
+    <div class="w-full max-w-lg bg-gray-800 rounded-md shadow-md p-6">
+      <h3 class="text-2xl font-semibold mb-4 text-center">Players in Lobby</h3>
+      <ul id="playerList" class="space-y-2">
+        <!-- Dynamic Player List -->
+      </ul>
+    </div>
+    <div class="flex space-x-4 mt-6">
+      <button 
+        id="startGameButton" 
+        class="px-8 py-3 rounded-md bg-green-500 hover:bg-green-600 text-white text-lg font-semibold shadow-md transition"
+        style="display: none;"
+      >
+        Start Game
+      </button>
+      <button 
+        id="leaveLobbyButton" 
+        class="px-8 py-3 rounded-md bg-red-500 hover:bg-red-600 text-white text-lg font-semibold shadow-md transition"
+      >
+        Leave Lobby
+      </button>
+    </div>
+  </div>
+<!-- Sign-Up Screen -->
+<div id="signUpScreen" class="hidden flex flex-col items-center justify-center h-screen bg-gradient-to-b from-green-900 to-black text-white opacity-0 transition-opacity duration-500">
+  <button 
+    id="returnToTitleFromSignUp" 
+    class="absolute top-4 right-4 px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white font-bold shadow-lg transition"
+  >
+    Return to Title
+  </button>
+  <h2 class="text-4xl font-extrabold mb-6">Sign Up</h2>
+  <div class="w-full max-w-sm space-y-4">
+    <input 
+      id="signUpEmail" 
+      type="email" 
+      placeholder="Enter your email" 
+      class="w-full px-4 py-3 text-black rounded-lg shadow-md focus:ring-4 focus:ring-green-400 outline-none"
+    />
+    <input 
+      id="signUpPassword" 
+      type="password" 
+      placeholder="Enter your password" 
+      class="w-full px-4 py-3 text-black rounded-lg shadow-md focus:ring-4 focus:ring-green-400 outline-none"
+    />
+    <button 
+      id="signUpButton" 
+      class="w-full px-8 py-3 rounded-lg bg-green-500 hover:bg-green-600 text-white font-bold shadow-lg transition"
+    >
+      Sign Up
+    </button>
+    <p class="text-sm text-gray-300">
+      Already have an account? 
+      <span id="goToSignIn" class="text-blue-400 cursor-pointer">Sign In</span>
+    </p>
+  </div>
+</div>
+<!-- End Game Screen -->
+<div id="gameEndScreen" class="hidden flex flex-col items-center justify-center h-screen bg-gradient-to-b from-green-900 to-black text-white opacity-0 transition-opacity duration-500">
+  <div class="bg-gray-800 bg-opacity-75 p-8 rounded-lg shadow-lg text-center">
+    <h1 id="gameResultTitle" class="text-5xl font-extrabold mb-6 animate-pulse tracking-wide">🎮 Game Over</h1>
+    <p id="gameResultMessage" class="text-lg mb-6 text-gray-200 italic">You Won!</p>
+    <div class="flex space-x-4 mt-8">
+      <button 
+        id="returnToTitleButton" 
+        class="px-8 py-3 rounded-lg bg-green-500 hover:bg-green-600 text-white text-lg font-semibold shadow-md transition transform hover:scale-105"
+      >
+        Return to Title
+      </button>
+      <button 
+        id="playAgainButton" 
+        class="px-8 py-3 rounded-lg bg-yellow-500 hover:bg-yellow-400 text-black text-lg font-semibold shadow-md transition transform hover:scale-105"
+      >
+        Play Again
+      </button>
+    </div>
+  </div>
+</div>
+<!-- Sign-In Screen -->
+<div id="signInScreen" class="hidden flex flex-col items-center justify-center h-screen bg-gradient-to-b from-green-900 to-black text-white opacity-0 transition-opacity duration-500">
+  <button 
+    id="returnToTitleFromSignIn" 
+    class="absolute top-4 right-4 px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white font-bold shadow-lg transition"
+  >
+    Return to Title
+  </button>
+  <h2 class="text-4xl font-extrabold mb-6">Sign In</h2>
+  <div class="w-full max-w-sm space-y-4">
+    <input 
+      id="signInEmail" 
+      type="email" 
+      placeholder="Enter your email" 
+      class="w-full px-4 py-3 text-black rounded-lg shadow-md focus:ring-4 focus:ring-blue-400 outline-none"
+    />
+    <input 
+      id="signInPassword" 
+      type="password" 
+      placeholder="Enter your password" 
+      class="w-full px-4 py-3 text-black rounded-lg shadow-md focus:ring-4 focus:ring-blue-400 outline-none"
+    />
+    <button 
+      id="signInButton" 
+      class="w-full px-8 py-3 rounded-lg bg-blue-500 hover:bg-blue-600 text-white font-bold shadow-lg transition"
+    >
+      Sign In
+    </button>
+    <p class="text-sm text-gray-300">
+      Don't have an account? 
+      <span id="goToSignUp" class="text-green-400 cursor-pointer">Sign Up</span>
+    </p>
+  </div>
+</div>
+  <!-- Game Scripts -->
+  
+</body>
+</html>
