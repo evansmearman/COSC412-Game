@@ -20,6 +20,7 @@ const mapSelectionScreen = document.getElementById('mapSelectionScreen');
 mapSelectionScreen.style.background = '#808080'; // Light green background
 const backToLobbyButton = document.getElementById('backToLobbyButton');
 const confirmMapButton = document.getElementById('confirmMapButton');
+const copyLobbyCodeButton = document.getElementById('copyLobbyCodeButton');
 const leaveLobbyButton = document.getElementById('leaveLobbyButton');
 const gameEndScreen = document.getElementById('gameEndScreen');
 gameEndScreen.style.background = '#808080'; // Light green background
@@ -53,7 +54,7 @@ world.solver.iterations = 10; // Physics solver iterations
 
 const players = {};
 let isGameStarted = false;
-let playerSpeed = 10;
+let playerSpeed = 100;
 let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
 let yaw = 0, pitch = 0;
 let isJumping = false;
@@ -142,7 +143,7 @@ goToSignIn.addEventListener('click', () => {
   }, 500);
 });
 
-const signInEmail = document.getElementById('signInEmail');
+const signInUsername = document.getElementById('signInUsername');
 const signInPassword = document.getElementById('signInPassword');
 const signInButton = document.getElementById('signInButton');
 
@@ -193,14 +194,14 @@ deleteAccountButton.addEventListener('click', async () => {
 const namePlate = document.getElementById('welcomeMessage');
 
 signInButton.addEventListener('click', async () => {
-  if (!signInEmail || !signInPassword) {
+  if (!signInUsername || !signInPassword) {
     alert('Sign-in elements not found.');
     return;
   }
-  const email = signInEmail.value.trim();
+  const username = signInUsername.value.trim();
   const password = signInPassword.value.trim();
 
-  if (!email || !password) {
+  if (!username || !password) {
     alert('Please fill in all fields.');
     return;
   }
@@ -211,15 +212,14 @@ signInButton.addEventListener('click', async () => {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ username: email, password }),
+      body: JSON.stringify({ username: username, password }),
     });
 
     const result = await response.json();
 
     if (response.ok) {
       alert('Login successful!');
-      playerName = email; // Set the player's name to their username
-      //document.getElementById('playerNameDisplay').textContent = `${playerName}`; // Display the player's name
+      playerName = username; // Set the player's name to their username
       signInScreen.classList.add('opacity-0', 'transition-opacity', 'duration-500');
       setTimeout(() => {
         signInScreen.classList.add('hidden');
@@ -286,6 +286,11 @@ backToLobbyButton.addEventListener('click', () => {
   }, 500);
   socket.emit('backToLobby', lobbyCode);
 });
+
+copyLobbyCodeButton.addEventListener('click', () => {
+  navigator.clipboard.writeText(lobbyCode);
+  alert('Lobby Code copied!');
+})
 
 leaveLobbyButton.addEventListener('click', () => {
   lobbyScreen.classList.add('opacity-0', 'transition-opacity', 'duration-500');
@@ -1336,11 +1341,8 @@ socket.on('currentPlayers', (players) => {
 socket.on('playerMoved', (data) => {
   const { id, position } = data;
   if (id !== socket.id && otherPlayers[id]) {
-      console.log(position)
       otherPlayers[id].body.position.set(position.x, position.y, position.z);
       otherPlayers[id].mesh.position.set(position.x, position.y, position.z);
-      console.log(`Player ${id} moved to position:`, position);
-
   }
 });
 

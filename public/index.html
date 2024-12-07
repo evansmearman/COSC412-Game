@@ -105,9 +105,9 @@
   <h2 class="text-4xl font-extrabold mb-6">Sign In</h2>
   <div class="w-full max-w-sm space-y-4">
     <input 
-      id="signInEmail" 
-      type="email" 
-      placeholder="Enter your email" 
+      id="signInUsername" 
+      type="username" 
+      placeholder="Enter your username" 
       class="w-full px-4 py-3 text-black rounded-lg shadow-md focus:ring-4 focus:ring-blue-400 outline-none"
     />
     <input 
@@ -180,18 +180,26 @@
       </ul>
     </div>
     <div class="flex space-x-4 mt-6">
-      <button 
-        id="startGameButton" 
-        class="px-8 py-3 rounded-md bg-green-500 hover:bg-green-600 text-white text-lg font-semibold shadow-md transition"
-        style="display: none;"
+      <button
+      id="copyLobbyCodeButton"
+      class="px-8 py-3 rounded-md bg-yellow-500 hover:bg-yellow-600 text-black text-lg font-semibold shadow-md transition"
       >
-        Start Game
+        Copy Code
       </button>
       <button 
         id="leaveLobbyButton" 
         class="px-8 py-3 rounded-md bg-red-500 hover:bg-red-600 text-white text-lg font-semibold shadow-md transition"
       >
         Leave Lobby
+      </button>
+    </div>
+    <div class="flex space-x-4 mt-6">
+      <button 
+      id="startGameButton" 
+      class="px-8 py-3 rounded-md bg-green-500 hover:bg-green-600 text-white text-lg font-semibold shadow-md transition"
+      style="display: none;"
+      >
+        Start Game
       </button>
     </div>
   </div>
