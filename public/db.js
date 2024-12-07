@@ -5,7 +5,7 @@ const DB_URI = process.env.DB_URI || 'mongodb://127.0.0.1:27017/your_database_na
 
 const checkMongoDBServer = async () => {
     try {
-        const client = new MongoClient(DB_URI, { useNewUrlParser: true, useUnifiedTopology: true });
+        const client = new MongoClient(DB_URI);
         await client.connect();
         console.log('MongoDB server is running and accessible');
         await client.close();
@@ -18,8 +18,6 @@ const connectDB = async () => {
     await checkMongoDBServer();
     try {
         await mongoose.connect(DB_URI, {
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
             serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
         });
         console.log('Database connected successfully!');

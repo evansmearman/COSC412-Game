@@ -71,7 +71,7 @@ app.post('/updateStats', async (req, res) => {
     const { username, wins, shotsFired } = req.body;
   
     try {
-      const player = await Player.findOneAndUpdate(
+      const player = await User.findOneAndUpdate(
         { username },
         {
           $inc: { wins: wins || 0, shotsFired: shotsFired || 0 },
@@ -91,7 +91,7 @@ app.get('/stats/:username', async (req, res) => {
     const { username } = req.params;
   
     try {
-      const player = await Player.findOne({ username });
+      const player = await User.findOne({ username });
       if (!player) {
         return res.status(404).json({ message: 'Player not found.' });
       }
@@ -129,7 +129,7 @@ io.on('connection', (socket) => {
         const { username, wins, shotsFired } = data;
     
         try {
-          const player = await Player.findOneAndUpdate(
+          const player = await User.findOneAndUpdate(
             { username },
             {
               $inc: { wins: wins || 0, shotsFired: shotsFired || 0 },
