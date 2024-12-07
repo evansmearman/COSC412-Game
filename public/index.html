@@ -45,7 +45,10 @@
   <audio id="buttonHoverSound" src="assets/click.mp3"></audio>
 
  <!-- Title Screen -->
-<div id="titleScreen" class="flex flex-col items-center justify-center h-screen bg-gradient-to-b from-green-900 to-black text-white opacity-100 transition-opacity duration-500">
+ <div id="titleScreen" class="flex flex-col items-center justify-center h-screen bg-gradient-to-b from-green-900 to-black text-white opacity-100 transition-opacity duration-500">
+  <header id="welcomeMessage" class="absolute top-6 text-xl text-gray-200 font-bold drop-shadow-md">
+    Welcome!
+  </header>
   <div class="text-center">
     <h1 class="text-6xl font-extrabold mb-6 animate-pulse tracking-wide drop-shadow-lg">🦟 Insect Invasion</h1>
     <p class="text-xl mb-6 text-gray-200 italic drop-shadow-md">Choose your path in the ultimate bug battle!</p>
@@ -203,9 +206,9 @@
   <h2 class="text-4xl font-extrabold mb-6">Sign Up</h2>
   <div class="w-full max-w-sm space-y-4">
     <input 
-      id="signUpEmail" 
-      type="email" 
-      placeholder="Enter your email" 
+      id="signUpUsername" 
+      type="username" 
+      placeholder="Enter your username" 
       class="w-full px-4 py-3 text-black rounded-lg shadow-md focus:ring-4 focus:ring-green-400 outline-none"
     />
     <input 

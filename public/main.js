@@ -69,7 +69,7 @@ let mouseLocked = false;
 
 const loginButton = document.getElementById('loginButton');
 const signInScreen = document.getElementById('signInScreen');
-signInScreen.style.background = '#90EE90'; // Light green background
+signInScreen.style.background = '#06402B'; // Dark green background
 loginButton.addEventListener('click', () => {
   titleScreen.classList.add('opacity-0', 'transition-opacity', 'duration-500');
   setTimeout(() => {
@@ -78,19 +78,19 @@ loginButton.addEventListener('click', () => {
     signInScreen.classList.add('flex', 'opacity-100', 'transition-opacity', 'duration-500');
   }, 500);
 });
-const signUpEmail = document.getElementById('signUpEmail'); // Fix element ID
+const signUpUsername = document.getElementById('signUpUsername');
 const signUpPassword = document.getElementById('signUpPassword');
 const signUpButton = document.getElementById('signUpButton');
 
 signUpButton.addEventListener('click', async () => {
-  if (!signUpEmail || !signUpPassword) { // Fix element ID
+  if (!signUpUsername || !signUpPassword) {
     alert('Sign-up elements not found.');
     return;
   }
-  const email = signUpEmail.value.trim(); // Fix variable name
+  const username = signUpUsername.value.trim();
   const password = signUpPassword.value.trim();
 
-  if (!email || !password) { // Fix variable name
+  if (!username || !password) {
     alert('Please fill in all fields.');
     return;
   }
@@ -101,7 +101,7 @@ signUpButton.addEventListener('click', async () => {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ username: email, password }), // Fix variable name
+      body: JSON.stringify({ username: username, password }),
     });
 
     const result = await response.json();
@@ -121,7 +121,7 @@ signUpButton.addEventListener('click', async () => {
 
 const goToSignUp = document.getElementById('goToSignUp');
 const signUpScreen = document.getElementById('signUpScreen');
-signUpScreen.style.background = '#90EE90'; // Light green background
+signUpScreen.style.background = '#06402B'; // Dark green background
 
 goToSignUp.addEventListener('click', () => {
   signInScreen.classList.add('opacity-0', 'transition-opacity', 'duration-500');
@@ -178,6 +178,7 @@ deleteAccountButton.addEventListener('click', async () => {
                 // Redirect to sign-in screen or perform other necessary actions
                 signInScreen.classList.remove('hidden');
                 titleScreen.classList.add('hidden');
+                namePlate.textContent = 'Welcome!';
                 deleteAccountButton.style.display = 'none';
             } else {
                 alert(result.message || 'Failed to delete account.');
@@ -188,6 +189,8 @@ deleteAccountButton.addEventListener('click', async () => {
         }
     }
 });
+
+const namePlate = document.getElementById('welcomeMessage');
 
 signInButton.addEventListener('click', async () => {
   if (!signInEmail || !signInPassword) {
@@ -216,13 +219,14 @@ signInButton.addEventListener('click', async () => {
     if (response.ok) {
       alert('Login successful!');
       playerName = email; // Set the player's name to their username
-      // document.getElementById('playerNameDisplay').textContent = `Welcome, ${playerName}`; // Display the player's name
+      //document.getElementById('playerNameDisplay').textContent = `${playerName}`; // Display the player's name
       signInScreen.classList.add('opacity-0', 'transition-opacity', 'duration-500');
       setTimeout(() => {
         signInScreen.classList.add('hidden');
         titleScreen.classList.remove('hidden', 'opacity-0');
         titleScreen.classList.add('flex', 'opacity-100', 'transition-opacity', 'duration-500');
-        playerNameInput.value = `Hello, ${playerName}`; // Set the welcome message in the name input
+        playerNameInput.value = `${playerName}`;        
+        namePlate.textContent = `Welcome, ${playerName}!`;
         deleteAccountButton.style.display = 'block'; // Show delete account button
       }, 500);
     } else {
@@ -1657,6 +1661,7 @@ const closeSettingsButton = document.getElementById('closeSettingsButton');
 
 openSettingsButton.addEventListener('click', () => {
   titleScreen.classList.add('hidden');
+  signInScreen.classList.add('hidden');
   settingsScreen.style.background = '#808080'; // Gray background
   settingsScreen.classList.remove('hidden', 'opacity-0');
   settingsScreen.classList.add('flex', 'opacity-100', 'transition-opacity', 'duration-500');
