@@ -1637,14 +1637,16 @@ function createBackgroundAnimation() {
 
 createBackgroundAnimation();
 
-const buttonClickSound = new Audio('assets/button-click.mp3');
-const buttonHoverSound = new Audio('assets/button-hover.mp3');
+const buttonClickSound = new Audio('assets/click.mp3');
+const buttonHoverSound = new Audio('assets/click.mp3');
 
 function addButtonSoundEffects(button) {
   button.addEventListener('click', () => {
+    buttonClickSound.currentTime = 0; // Reset playback position
     buttonClickSound.play();
   });
   button.addEventListener('mouseover', () => {
+    buttonHoverSound.currentTime = 0; // Reset playback position
     buttonHoverSound.play();
   });
 }

@@ -6,11 +6,11 @@ export default defineConfig({
   build: {
     outDir: '../dist',
     rollupOptions: {
-      external: ['/@id/__x00__virtual:terminal/console', 'socket.io-client']
+      external: ['/@id/__x00__virtual:terminal/console', 'socket.io-client', '@dimforge/rapier3d-compat']
     }
   },
   optimizeDeps: {
-    include: ['socket.io-client']
+    include: ['socket.io-client', '@dimforge/rapier3d-compat']
   },
   plugins: [
     Terminal({
