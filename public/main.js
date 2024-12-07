@@ -6,9 +6,9 @@ import { nanoid } from 'nanoid';
 const socket = io(); // Ensure this connects to the correct server
 
 const titleScreen = document.getElementById('titleScreen');
-titleScreen.style.background = 'linear-gradient(to bottom, green, black)';
+titleScreen.style.background = '#808080'; // Light green background
 const lobbyScreen = document.querySelector('#lobbyScreen');
-lobbyScreen.style.background = 'linear-gradient(to bottom, green, black)';
+lobbyScreen.style.background = '#808080'; // Light green background
 const playerNameInput = document.getElementById('playerNameInput');
 const createLobbyButton = document.getElementById('createLobbyButton');
 const joinLobbyButton = document.getElementById('joinLobbyButton');
@@ -17,12 +17,12 @@ const lobbyCodeDisplay = document.getElementById('lobbyCodeDisplay');
 const playerList = document.getElementById('playerList');
 const startGameButton = document.getElementById('startGameButton');
 const mapSelectionScreen = document.getElementById('mapSelectionScreen');
-mapSelectionScreen.style.background = 'linear-gradient(to bottom, green, black)';
+mapSelectionScreen.style.background = '#808080'; // Light green background
 const backToLobbyButton = document.getElementById('backToLobbyButton');
 const confirmMapButton = document.getElementById('confirmMapButton');
 const leaveLobbyButton = document.getElementById('leaveLobbyButton');
 const gameEndScreen = document.getElementById('gameEndScreen');
-gameEndScreen.style.background = 'linear-gradient(to bottom, green, black)';
+gameEndScreen.style.background = '#808080'; // Light green background
 let selectedMap = '';
 let finalMap = '';
 let lobbyCode = '';
@@ -45,7 +45,11 @@ document.body.appendChild(renderer.domElement);
 document.body.style.overflow = 'hidden';
 
 const world = new CANNON.World();
-world.gravity.set(0, -9.82, 0);
+world.gravity.set(0, -9.82, 0); // Set gravity
+world.broadphase = new CANNON.NaiveBroadphase();
+world.broadphase.useBoundingBoxes = true;
+world.solver.iterations = 10; // Physics solver iterations
+
 
 const players = {};
 let isGameStarted = false;
@@ -65,7 +69,7 @@ let mouseLocked = false;
 
 const loginButton = document.getElementById('loginButton');
 const signInScreen = document.getElementById('signInScreen');
-signInScreen.style.background = 'linear-gradient(to bottom, green, black)';
+signInScreen.style.background = '#90EE90'; // Light green background
 loginButton.addEventListener('click', () => {
   titleScreen.classList.add('opacity-0', 'transition-opacity', 'duration-500');
   setTimeout(() => {
@@ -117,7 +121,7 @@ signUpButton.addEventListener('click', async () => {
 
 const goToSignUp = document.getElementById('goToSignUp');
 const signUpScreen = document.getElementById('signUpScreen');
-signUpScreen.style.background = 'linear-gradient(to bottom, green, black)';
+signUpScreen.style.background = '#90EE90'; // Light green background
 
 goToSignUp.addEventListener('click', () => {
   signInScreen.classList.add('opacity-0', 'transition-opacity', 'duration-500');
@@ -141,6 +145,49 @@ goToSignIn.addEventListener('click', () => {
 const signInEmail = document.getElementById('signInEmail');
 const signInPassword = document.getElementById('signInPassword');
 const signInButton = document.getElementById('signInButton');
+
+const deleteAccountButton = document.createElement('button');
+deleteAccountButton.textContent = 'Delete Account';
+deleteAccountButton.style.position = 'fixed';
+deleteAccountButton.style.bottom = '20px';
+deleteAccountButton.style.right = '20px';
+deleteAccountButton.style.padding = '10px 20px';
+deleteAccountButton.style.backgroundColor = '#ff0000';
+deleteAccountButton.style.color = '#fff';
+deleteAccountButton.style.border = 'none';
+deleteAccountButton.style.borderRadius = '5px';
+deleteAccountButton.style.cursor = 'pointer';
+deleteAccountButton.style.display = 'none'; // Hide initially
+document.body.appendChild(deleteAccountButton);
+
+deleteAccountButton.addEventListener('click', async () => {
+    if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+        try {
+            const response = await fetch('/deleteAccount', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ username: playerName }),
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                alert('Account deleted successfully.');
+                // Redirect to sign-in screen or perform other necessary actions
+                signInScreen.classList.remove('hidden');
+                titleScreen.classList.add('hidden');
+                deleteAccountButton.style.display = 'none';
+            } else {
+                alert(result.message || 'Failed to delete account.');
+            }
+        } catch (error) {
+            console.error('Error deleting account:', error.message);
+            alert('An error occurred. Please try again.');
+        }
+    }
+});
 
 signInButton.addEventListener('click', async () => {
   if (!signInEmail || !signInPassword) {
@@ -176,6 +223,7 @@ signInButton.addEventListener('click', async () => {
         titleScreen.classList.remove('hidden', 'opacity-0');
         titleScreen.classList.add('flex', 'opacity-100', 'transition-opacity', 'duration-500');
         playerNameInput.value = `Hello, ${playerName}`; // Set the welcome message in the name input
+        deleteAccountButton.style.display = 'block'; // Show delete account button
       }, 500);
     } else {
       alert(result.message || 'Login failed.');
@@ -667,7 +715,7 @@ const visualizePhysicsBody = () => {
   scene.add(wireframe);
 };
 
-visualizePhysicsBody();
+// visualizePhysicsBody();
 
 function checkPowerUpCollision() {
   powerUps.forEach((powerUp, index) => {
@@ -1037,7 +1085,7 @@ playerBody.angularDamping = 0.9;
 playerBody.fixedRotation = true;
 playerBody.updateMassProperties();
 function handlePlayerMovement() {
-    const flySpeed = 5;
+    const flySpeed = 20; // Increased fly speed
     playerBody.velocity.x = 0;
     playerBody.velocity.z = 0;
 
@@ -1062,9 +1110,11 @@ function handlePlayerMovement() {
     if (playerRole === 'Insect') {
         if (flyUp) moveDirection.y += flySpeed;
         if (flyDown) moveDirection.y -= flySpeed;
+        moveDirection.multiplyScalar(2); // Double the speed for flies
     }
 
-    const newPosition = new CANNON.Vec3().copy(playerBody.position).vadd(moveDirection);    if (!isCollidingWithMap(newPosition)) {
+    const newPosition = new CANNON.Vec3().copy(playerBody.position).vadd(moveDirection);
+    if (!isCollidingWithMap(newPosition)) {
         playerBody.velocity.x = moveDirection.x;
         playerBody.velocity.y = moveDirection.y;
         playerBody.velocity.z = moveDirection.z;
@@ -1580,62 +1630,6 @@ function onWindowResize() {
 
 }
 
-function createBackgroundAnimation() {
-  const canvas = document.createElement('canvas');
-  canvas.id = 'backgroundCanvas';
-  canvas.style.position = 'absolute';
-  canvas.style.top = '0';
-  canvas.style.left = '0';
-  canvas.style.width = '100%';
-  canvas.style.height = '100%';
-  canvas.style.zIndex = '-1';
-  document.body.appendChild(canvas);
-
-  const ctx = canvas.getContext('2d');
-  const particles = [];
-  const particleCount = 100;
-
-  for (let i = 0; i < particleCount; i++) {
-    particles.push({
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height,
-      radius: Math.random() * 3 + 1,
-      dx: Math.random() * 2 - 1,
-      dy: Math.random() * 2 - 1,
-    });
-  }
-
-  function drawParticles() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    particles.forEach((particle) => {
-      ctx.beginPath();
-      ctx.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-      ctx.fill();
-      ctx.closePath();
-    });
-  }
-
-  function updateParticles() {
-    particles.forEach((particle) => {
-      particle.x += particle.dx;
-      particle.y += particle.dy;
-
-      if (particle.x < 0 || particle.x > canvas.width) particle.dx *= -1;
-      if (particle.y < 0 || particle.y > canvas.height) particle.dy *= -1;
-    });
-  }
-
-  function animateParticles() {
-    drawParticles();
-    updateParticles();
-    requestAnimationFrame(animateParticles);
-  }
-
-  animateParticles();
-}
-
-createBackgroundAnimation();
 
 const buttonClickSound = new Audio('assets/click.mp3');
 const buttonHoverSound = new Audio('assets/click.mp3');
@@ -1653,3 +1647,49 @@ function addButtonSoundEffects(button) {
 
 // Apply sound effects to all buttons
 document.querySelectorAll('button').forEach(addButtonSoundEffects);
+
+const settingsScreen = document.getElementById('settingsScreen');
+const volumeSlider = document.getElementById('volumeSlider');
+const colorPicker = document.getElementById('colorPicker');
+const applySettingsButton = document.getElementById('applySettingsButton');
+const openSettingsButton = document.getElementById('openSettingsButton');
+const closeSettingsButton = document.getElementById('closeSettingsButton');
+
+openSettingsButton.addEventListener('click', () => {
+  titleScreen.classList.add('hidden');
+  settingsScreen.style.background = '#808080'; // Gray background
+  settingsScreen.classList.remove('hidden', 'opacity-0');
+  settingsScreen.classList.add('flex', 'opacity-100', 'transition-opacity', 'duration-500');
+});
+
+closeSettingsButton.addEventListener('click', () => {
+  settingsScreen.classList.add('opacity-0', 'transition-opacity', 'duration-500');
+  setTimeout(() => {
+    settingsScreen.classList.add('hidden');
+    titleScreen.classList.remove('hidden');
+  }, 500);
+});
+
+applySettingsButton.addEventListener('click', () => {
+  const volume = volumeSlider.value;
+  const color = colorPicker.value;
+
+  gameMusic.volume = volume;
+  document.body.style.backgroundColor = color;
+
+  titleScreen.style.background = color;
+  lobbyScreen.style.background = color;
+  mapSelectionScreen.style.background = color;
+  gameEndScreen.style.background = color;
+  signInScreen.style.background = color;
+  signUpScreen.style.background = color;
+
+  settingsScreen.classList.add('opacity-0', 'transition-opacity', 'duration-500');
+
+  settingsScreen.classList.add('hidden');
+  titleScreen.classList.remove('hidden');
+
+  setTimeout(() => {
+    settingsScreen.classList.add('hidden');
+  }, 500);
+});

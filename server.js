@@ -103,6 +103,25 @@ app.get('/stats/:username', async (req, res) => {
     }
 });
 
+app.delete('/deleteAccount', async (req, res) => {
+    const { username } = req.body;
+    if (!username) {
+        return res.status(400).json({ message: 'Username is required.' });
+    }
+
+    try {
+        const user = await User.findOneAndDelete({ username });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found.' });
+        }
+
+        res.status(200).json({ message: 'Account deleted successfully.' });
+    } catch (error) {
+        console.error('Error deleting account:', error.message);
+        res.status(500).json({ message: 'Server error.' });
+    }
+});
+
 // Socket.io connection
 io.on('connection', (socket) => {
     console.log(`Player connected: ${socket.id}`);
