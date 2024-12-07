@@ -76,10 +76,10 @@ app.post('/updateStats', async (req, res) => {
         {
           $inc: { wins: wins || 0, shotsFired: shotsFired || 0 },
         },
-        { new: true, upsert: true } // Create a new record if the player doesn't exist
+        { new: true }
       );
   
-      res.status(200).json({ message: 'Stats updated successfully.', player });
+      if (player !== null) res.status(200).json({ message: 'Stats updated successfully.', player });
     } catch (error) {
       console.error('Error updating stats:', error);
       res.status(500).json({ message: 'Server error.' });
@@ -98,7 +98,7 @@ app.post('/updateColor', async(req, res) => {
             { new: true }
         );
 
-        res.status(200).json({ message: 'Color updated successfully.', player });
+        if (player !== null) res.status(200).json({ message: 'Color updated successfully.', player });
     } catch (error) {
         console.error('Error updating color: ', error);
         res.status(500).json({ message: 'Server error.' });
@@ -153,9 +153,9 @@ io.on('connection', (socket) => {
             {
               $inc: { wins: wins || 0, shotsFired: shotsFired || 0 },
             },
-            { new: true, upsert: true }
+            { new: true }
           );
-          console.log(`Stats updated for player ${username}:`, player);
+          if (player !== null) console.log(`Stats updated for player ${username}:`, player);
         } catch (error) {
           console.error('Error updating stats:', error);
         }
@@ -165,15 +165,13 @@ io.on('connection', (socket) => {
         const { username, userColor } = data;
 
         try {
-            if (username === '')
-                console.log('Unregistered player, changes not saved.');
-            else if (userColor && userColor.trim() !== '') {
+            if (userColor && userColor.trim() !== '') {
                 const player = await User.findOneAndUpdate(
                     { username },
                     { userColor: userColor },
                     { new: true }
                 );
-                console.log(`Color updated for player ${username}:`, player);
+                if (player !== null) console.log(`Color updated for player ${username}:`, player);
             }
         } catch (error) {
             console.error('Error updating color:', error);

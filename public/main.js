@@ -962,7 +962,7 @@ function shootSphere() {
   
       removeProjectile(sphereMesh, sphereBody);
     });
-    socket.emit('updateStats', { username: 'PlayerName', shotsFired: 1 });
+    socket.emit('updateStats', { username: playerName, shotsFired: 1 });
     setTimeout(() => {
       removeProjectile(sphereMesh, sphereBody);
     }, 10000);
@@ -1449,6 +1449,7 @@ socket.on('assignRole', (role) => {
               playerMesh.add(camera);
               camera.position.set(0, 75, 8);
               camera.rotation.set(0, Math.PI/1, 0);
+              camera.rotation.order = "YXZ";
 
               if (gltf.animations && gltf.animations.length > 0) {
                   humanMixer = new THREE.AnimationMixer(humanModel);
