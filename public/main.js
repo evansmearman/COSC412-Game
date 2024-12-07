@@ -6,9 +6,7 @@ import { nanoid } from 'nanoid';
 const socket = io(); // Ensure this connects to the correct server
 
 const titleScreen = document.getElementById('titleScreen');
-titleScreen.style.background = '#808080'; // Light green background
 const lobbyScreen = document.querySelector('#lobbyScreen');
-lobbyScreen.style.background = '#808080'; // Light green background
 const playerNameInput = document.getElementById('playerNameInput');
 const createLobbyButton = document.getElementById('createLobbyButton');
 const joinLobbyButton = document.getElementById('joinLobbyButton');
@@ -17,19 +15,18 @@ const lobbyCodeDisplay = document.getElementById('lobbyCodeDisplay');
 const playerList = document.getElementById('playerList');
 const startGameButton = document.getElementById('startGameButton');
 const mapSelectionScreen = document.getElementById('mapSelectionScreen');
-mapSelectionScreen.style.background = '#808080'; // Light green background
 const backToTitleButton = document.getElementById('backToTitleButton');
 const confirmMapButton = document.getElementById('confirmMapButton');
 const copyLobbyCodeButton = document.getElementById('copyLobbyCodeButton');
 const leaveLobbyButton = document.getElementById('leaveLobbyButton');
 const gameEndScreen = document.getElementById('gameEndScreen');
-gameEndScreen.style.background = '#808080'; // Light green background
 let selectedMap = '';
 let finalMap = '';
 let lobbyCode = '';
 let playersInLobby = [];
 let playerRole = '';
-let playerName = ''; // Add this line to store the player's name
+let playerName = '';
+let userColor = '#064e3b';
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(140, 255, 115);
@@ -70,7 +67,6 @@ let mouseLocked = false;
 
 const loginButton = document.getElementById('loginButton');
 const signInScreen = document.getElementById('signInScreen');
-signInScreen.style.background = '#06402B'; // Dark green background
 loginButton.addEventListener('click', () => {
   titleScreen.classList.add('opacity-0', 'transition-opacity', 'duration-500');
   setTimeout(() => {
@@ -102,7 +98,7 @@ signUpButton.addEventListener('click', async () => {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ username: username, password }),
+      body: JSON.stringify({ username, password, userColor }),
     });
 
     const result = await response.json();
@@ -122,7 +118,6 @@ signUpButton.addEventListener('click', async () => {
 
 const goToSignUp = document.getElementById('goToSignUp');
 const signUpScreen = document.getElementById('signUpScreen');
-signUpScreen.style.background = '#06402B'; // Dark green background
 
 goToSignUp.addEventListener('click', () => {
   signInScreen.classList.add('opacity-0', 'transition-opacity', 'duration-500');
@@ -212,7 +207,7 @@ signInButton.addEventListener('click', async () => {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ username: username, password }),
+      body: JSON.stringify({ username, password }),
     });
 
     const result = await response.json();
@@ -220,6 +215,7 @@ signInButton.addEventListener('click', async () => {
     if (response.ok) {
       alert('Login successful!');
       playerName = username; // Set the player's name to their username
+      updateScreensColor(result.color); // Set the screen color to their preference
       signInScreen.classList.add('opacity-0', 'transition-opacity', 'duration-500');
       setTimeout(() => {
         signInScreen.classList.add('hidden');
@@ -1665,7 +1661,7 @@ const closeSettingsButton = document.getElementById('closeSettingsButton');
 openSettingsButton.addEventListener('click', () => {
   titleScreen.classList.add('hidden');
   signInScreen.classList.add('hidden');
-  settingsScreen.style.background = '#808080'; // Gray background
+  settingsScreen.style.backgroundImage = 'linear-gradient(to bottom, #808080, #000000)'; // Gray background
   settingsScreen.classList.remove('hidden', 'opacity-0');
   settingsScreen.classList.add('flex', 'opacity-100', 'transition-opacity', 'duration-500');
 });
@@ -1683,15 +1679,9 @@ applySettingsButton.addEventListener('click', () => {
   const color = colorPicker.value;
 
   gameMusic.volume = volume;
-  document.body.style.backgroundColor = color;
-
-  titleScreen.style.background = color;
-  lobbyScreen.style.background = color;
-  mapSelectionScreen.style.background = color;
-  gameEndScreen.style.background = color;
-  signInScreen.style.background = color;
-  signUpScreen.style.background = color;
-
+  updateScreensColor(color);
+  userColor = color;
+  socket.emit('updateColor', { username: playerName, userColor: color });
   settingsScreen.classList.add('opacity-0', 'transition-opacity', 'duration-500');
 
   settingsScreen.classList.add('hidden');
@@ -1701,3 +1691,13 @@ applySettingsButton.addEventListener('click', () => {
     settingsScreen.classList.add('hidden');
   }, 500);
 });
+
+function updateScreensColor(hexColor) {
+  document.body.style.backgroundImage = `linear-gradient(to bottom, ${hexColor}, #000000)`;
+  titleScreen.style.backgroundImage = `linear-gradient(to bottom, ${hexColor}, #000000)`;
+  lobbyScreen.style.backgroundImage = `linear-gradient(to bottom, ${hexColor}, #000000)`;
+  mapSelectionScreen.style.backgroundImage = `linear-gradient(to bottom, ${hexColor}, #000000)`;
+  gameEndScreen.style.backgroundImage = `linear-gradient(to bottom, ${hexColor}, #000000)`;
+  signInScreen.style.backgroundImage = `linear-gradient(to bottom, ${hexColor}, #000000)`;
+  signUpScreen.style.backgroundImage = `linear-gradient(to bottom, ${hexColor}, #000000)`;
+}

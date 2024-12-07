@@ -28,7 +28,7 @@ let lobbies = {}; // { lobbyCode: { players: [], host: socketId, gameStarted: fa
 let players = {}; // { socketId: { name: string, position: {x, y, z}, role: null, lobbyCode: string } }
 
 app.post('/register', async (req, res) => {
-    const { username, password } = req.body;
+    const { username, password, userColor } = req.body;
     if (!username || !password) {
         return res.status(400).json({ message: 'Username and password are required.' });
     }
@@ -39,7 +39,7 @@ app.post('/register', async (req, res) => {
             return res.status(400).json({ message: 'Username already exists.' });
         }
 
-        const user = new User({ username, password });
+        const user = new User({ username, password, userColor });
         await user.save();
         res.status(201).json({ message: 'User registered successfully.' });
     } catch (error) {
@@ -60,7 +60,7 @@ app.post('/login', async (req, res) => {
             return res.status(400).json({ message: 'Invalid username or password.' });
         }
 
-        res.status(200).json({ message: 'Login successful.' });
+        res.status(200).json({ message: 'Login successful.', color: user.userColor });
     } catch (error) {
         console.error('Error during login:', error);
         res.status(500).json({ message: 'Server error.' });
@@ -85,6 +85,25 @@ app.post('/updateStats', async (req, res) => {
       res.status(500).json({ message: 'Server error.' });
     }
 });
+
+app.post('/updateColor', async(req, res) => {
+    const { username, userColor } = req.body;
+
+    try {
+        const player = await User.findOneAndUpdate(
+            { username },
+            {
+                userColor: userColor
+            },
+            { new: true }
+        );
+
+        res.status(200).json({ message: 'Color updated successfully.', player });
+    } catch (error) {
+        console.error('Error updating color: ', error);
+        res.status(500).json({ message: 'Server error.' });
+    }
+})
   
 // Endpoint to fetch stats
 app.get('/stats/:username', async (req, res) => {
@@ -139,6 +158,25 @@ io.on('connection', (socket) => {
           console.log(`Stats updated for player ${username}:`, player);
         } catch (error) {
           console.error('Error updating stats:', error);
+        }
+    });
+    socket.on('updateColor', async (data) => {
+        console.log(data);
+        const { username, userColor } = data;
+
+        try {
+            if (username === '')
+                console.log('Unregistered player, changes not saved.');
+            else if (userColor && userColor.trim() !== '') {
+                const player = await User.findOneAndUpdate(
+                    { username },
+                    { userColor: userColor },
+                    { new: true }
+                );
+                console.log(`Color updated for player ${username}:`, player);
+            }
+        } catch (error) {
+            console.error('Error updating color:', error);
         }
     });
     // Handle lobby creation
