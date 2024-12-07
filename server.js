@@ -263,12 +263,10 @@ io.on('connection', (socket) => {
                 if (player.role === 'Insect' || data.position.y === 0) { // Ensure only 'Insect' can fly
                     player.position = data.position;
                     io.to(player.lobbyCode).emit('playerMoved', { id: socket.id, position: data.position });
-                    console.log(`Player ${socket.id} moved to position:`, data.position); // Debugging log
                 }
                 if (player.role === 'Human' && data.position.y > 0) {
                     player.position = data.position;
                     io.to(player.lobbyCode).emit('playerMoved', { id: socket.id, position: data.position });
-                    console.log(`Player ${socket.id} moved to position:`, data.position); // Debugging log
                 }
             }
         }
@@ -285,7 +283,6 @@ io.on('connection', (socket) => {
                 position: data.position,
                 velocity: data.velocity,
             });
-            console.log(`Player ${socket.id} shot from position:`, data.position, 'with velocity:', data.velocity);
         }
     });
 
@@ -322,7 +319,7 @@ io.on('connection', (socket) => {
         resetLobbyState(lobbyCode);
         io.to(lobbyCode).emit('returnToLobby');
     });
-    socket.on('backToLobby', ({lobbyCode}) =>{
+    socket.on('backToTitle', ({lobbyCode}) =>{
         console.log("removing")
         delete lobbies[lobbyCode]
         

@@ -18,7 +18,7 @@ const playerList = document.getElementById('playerList');
 const startGameButton = document.getElementById('startGameButton');
 const mapSelectionScreen = document.getElementById('mapSelectionScreen');
 mapSelectionScreen.style.background = '#808080'; // Light green background
-const backToLobbyButton = document.getElementById('backToLobbyButton');
+const backToTitleButton = document.getElementById('backToTitleButton');
 const confirmMapButton = document.getElementById('confirmMapButton');
 const copyLobbyCodeButton = document.getElementById('copyLobbyCodeButton');
 const leaveLobbyButton = document.getElementById('leaveLobbyButton');
@@ -277,14 +277,14 @@ createLobbyButton.addEventListener('click', () => {
   }, 500);
 });
 
-backToLobbyButton.addEventListener('click', () => {
+backToTitleButton.addEventListener('click', () => {
   mapSelectionScreen.classList.add('opacity-0', 'transition-opacity', 'duration-500');
   setTimeout(() => {
     mapSelectionScreen.classList.add('hidden');
-    lobbyScreen.classList.remove('hidden', 'opacity-0');
-    lobbyScreen.classList.add('flex', 'opacity-100', 'transition-opacity', 'duration-500');
+    titleScreen.classList.remove('hidden', 'opacity-0');
+    titleScreen.classList.add('flex', 'opacity-100', 'transition-opacity', 'duration-500');
   }, 500);
-  socket.emit('backToLobby', lobbyCode);
+  socket.emit('backToTitle', lobbyCode);
 });
 
 copyLobbyCodeButton.addEventListener('click', () => {
@@ -881,7 +881,7 @@ window.addEventListener('keydown', (event) => {
       }
       break;
     case 'ShiftLeft': flyUp = true; break;
-    case 'ControlLeft': flyDown = false; break;
+    case 'ControlLeft': flyDown = true; break;
     case 'Escape':
       if (mouseLocked) {
         document.exitPointerLock();
@@ -1094,7 +1094,7 @@ playerBody.angularDamping = 0.9;
 playerBody.fixedRotation = true;
 playerBody.updateMassProperties();
 function handlePlayerMovement() {
-    const flySpeed = 20; // Increased fly speed
+    const flySpeed = 30; // Increased fly speed
     playerBody.velocity.x = 0;
     playerBody.velocity.z = 0;
 
@@ -1119,7 +1119,7 @@ function handlePlayerMovement() {
     if (playerRole === 'Insect') {
         if (flyUp) moveDirection.y += flySpeed;
         if (flyDown) moveDirection.y -= flySpeed;
-        moveDirection.multiplyScalar(2); // Double the speed for flies
+        moveDirection.multiplyScalar(1.5); // 1.5 the speed for flies
     }
 
     const newPosition = new CANNON.Vec3().copy(playerBody.position).vadd(moveDirection);
@@ -1378,6 +1378,7 @@ function showRoleDisplay(role) {
 }
 
 socket.on('assignRole', (role) => {
+  playerRole = role;
   isFlying = role === 'Insect';
   const loader = new GLTFLoader();
 
