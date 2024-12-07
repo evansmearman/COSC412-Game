@@ -895,7 +895,7 @@ window.addEventListener('keyup', (event) => {
 });
 
 window.addEventListener('mousedown', (event) => {
-  if (event.button === 0) shootSphere();
+  if (event.button === 0 && isGameStarted) shootSphere();
 });
 
 function shootSphere() {
