@@ -1487,7 +1487,7 @@ loader.load(
         collisionFilterGroup: 0b01,
         collisionFilterMask: 0b10 | 0b01,
         linearDamping: 1, // Add linear damping to reduce unwanted movement
-        angularDamping: 0.9,
+        angularDamping: 1,
     });
     world.addBody(playerBody);
 model.position.set(
