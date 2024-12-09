@@ -40,7 +40,7 @@
       }
     }
   </script>
-  <script type="module" crossorigin src="/assets/index-c35d76a2.js"></script>
+  <script type="module" crossorigin src="/assets/index-84250a27.js"></script>
 </head>
 <body class="bg-background text-white font-sans">
   <audio id="gameMusic" src="assets/Juhani Junkala [Retro Game Music Pack] Level 1.mp3" loop></audio>
@@ -49,7 +49,10 @@
   <audio id="buttonHoverSound" src="assets/click.mp3"></audio>
 
  <!-- Title Screen -->
-<div id="titleScreen" class="flex flex-col items-center justify-center h-screen bg-gradient-to-b from-green-900 to-black text-white opacity-100 transition-opacity duration-500">
+ <div id="titleScreen" class="flex flex-col items-center justify-center h-screen bg-gradient-to-b from-green-900 to-black text-white opacity-100 transition-opacity duration-500">
+  <header id="welcomeMessage" class="absolute top-6 text-xl text-gray-200 font-bold drop-shadow-md">
+    Welcome!
+  </header>
   <div class="text-center">
     <h1 class="text-6xl font-extrabold mb-6 animate-pulse tracking-wide drop-shadow-lg">🦟 Insect Invasion</h1>
     <p class="text-xl mb-6 text-gray-200 italic drop-shadow-md">Choose your path in the ultimate bug battle!</p>
@@ -106,9 +109,9 @@
   <h2 class="text-4xl font-extrabold mb-6">Sign In</h2>
   <div class="w-full max-w-sm space-y-4">
     <input 
-      id="signInEmail" 
-      type="email" 
-      placeholder="Enter your email" 
+      id="signInUsername" 
+      type="username" 
+      placeholder="Enter your username" 
       class="w-full px-4 py-3 text-black rounded-lg shadow-md focus:ring-4 focus:ring-blue-400 outline-none"
     />
     <input 
@@ -150,7 +153,7 @@
       </div> -->
       
      
-    </div>
+    </div> 
     <div class="flex space-x-4 mt-8">
       <button 
         id="backToTitleButton" 
@@ -181,18 +184,26 @@
       </ul>
     </div>
     <div class="flex space-x-4 mt-6">
-      <button 
-        id="startGameButton" 
-        class="px-8 py-3 rounded-md bg-green-500 hover:bg-green-600 text-white text-lg font-semibold shadow-md transition"
-        style="display: none;"
+      <button
+      id="copyLobbyCodeButton"
+      class="px-8 py-3 rounded-md bg-yellow-500 hover:bg-yellow-600 text-black text-lg font-semibold shadow-md transition"
       >
-        Start Game
+        Copy Code
       </button>
       <button 
         id="leaveLobbyButton" 
         class="px-8 py-3 rounded-md bg-red-500 hover:bg-red-600 text-white text-lg font-semibold shadow-md transition"
       >
         Leave Lobby
+      </button>
+    </div>
+    <div class="flex space-x-4 mt-6">
+      <button 
+      id="startGameButton" 
+      class="px-8 py-3 rounded-md bg-green-500 hover:bg-green-600 text-white text-lg font-semibold shadow-md transition"
+      style="display: none;"
+      >
+        Start Game
       </button>
     </div>
   </div>
@@ -207,9 +218,9 @@
   <h2 class="text-4xl font-extrabold mb-6">Sign Up</h2>
   <div class="w-full max-w-sm space-y-4">
     <input 
-      id="signUpEmail" 
-      type="email" 
-      placeholder="Enter your email" 
+      id="signUpUsername" 
+      type="username" 
+      placeholder="Enter your username" 
       class="w-full px-4 py-3 text-black rounded-lg shadow-md focus:ring-4 focus:ring-green-400 outline-none"
     />
     <input 

@@ -1443,8 +1443,8 @@ socket.on('assignRole', (role) => {
               playerMesh = humanModel;
               scene.add(playerMesh);
 
-              const shape = new CANNON.Box(new CANNON.Vec3(0.5, 1, 0.5));
-              playerBody.addShape(shape);
+              // const shape = new CANNON.Box(new CANNON.Vec3(0.5, 1, 0.5));
+              // playerBody.addShape(shape);
 
               playerMesh.add(camera);
               camera.position.set(0, 75, 8);
@@ -1486,6 +1486,8 @@ loader.load(
         position: new CANNON.Vec3(0, 1, 0),
         collisionFilterGroup: 0b01,
         collisionFilterMask: 0b10 | 0b01,
+        linearDamping: 1, // Add linear damping to reduce unwanted movement
+        angularDamping: 0.9,
     });
     world.addBody(playerBody);
 model.position.set(
